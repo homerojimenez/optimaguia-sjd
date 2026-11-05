@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@200..800&display=swap">
-<link rel="stylesheet" href="css/app.css?v=1">
+<link rel="stylesheet" href="css/app.css?v=2">
 <link rel="preload" as="image" href="assets/img/sjd-8.jpg">
 <script type="importmap">
 { "imports": {
@@ -31,7 +31,7 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/ScrollToPlugin.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/Observer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script type="module" src="js/app.js?v=1"></script>
+<script type="module" src="js/app.js?v=2"></script>
 </head>
 <body>
 
@@ -82,7 +82,8 @@
     <p>Prototipo funcional para presentar al equipo. La pista, la transcripción, el plano, el asistente y la realidad aumentada funcionan; la RA está simulada con la cámara y puntos colocados al azar.</p>
     <div class="desk-qr"><div id="qr" aria-label="Código QR para abrir el prototipo en el móvil"></div><div><b>Ábrelo en tu móvil</b><span>Escanea el código con la cámara. La RA usa la cámara trasera y el giroscopio.</span></div></div>
     <ul class="desk-tips">
-      <li><b>Voz:</b> la locución es la voz sintética del dispositivo, en lugar de la grabación final.</li>
+      <li><b>Voz:</b> ElevenLabs v4 Turbo en tiempo real, con la palabra que suena resaltada.</li>
+      <li><b>Guía con IA:</b> Claude responde solo con el contenido de la visita y cita la parada.</li>
       <li><b>RA en el ordenador:</b> usa la webcam, o la foto de la sala si no hay cámara. Arrastra para mirar alrededor.</li>
       <li><b>Textos:</b> provisionales, pendientes de la propuesta de contenido.</li>
     </ul>
@@ -232,7 +233,7 @@
       <div class="segm" data-segm="theme"><span class="ind"></span><button data-v="auto">Automática</button><button data-v="light">Clara</button><button data-v="dark">Oscura</button></div>
       <div class="sec">Accesibilidad</div>
       <div class="rows">
-        <button class="row" data-toggle="voice"><span class="t">Leer en voz alta<small>Voz del dispositivo, en lugar de la locución final</small></span><span class="sw" role="switch"></span></button>
+        <button class="row" data-toggle="voice"><span class="t">Leer en voz alta<small>ElevenLabs v4 Turbo, en tiempo real</small></span><span class="sw" role="switch"></span></button>
         <button class="row" data-toggle="subs"><span class="t">Subtítulos sobre la cámara</span><span class="sw" role="switch"></span></button>
         <button class="row" data-toggle="ad"><span class="t">Audiodescripción<small>Describe lo que hay en cada sala</small></span><span class="sw" role="switch"></span></button>
         <button class="row" data-toggle="contrast"><span class="t">Alto contraste</span><span class="sw" role="switch"></span></button>
@@ -245,7 +246,7 @@
         <button class="row" data-mode="voice"><svg class="i lead"><use href="#i-mic"/></svg><span class="t">Modo voz<small>Di «pausa», «sigue» o «siguiente parada»</small></span><span class="radio"></span></button>
       </div>
       <div class="sec">Sobre este prototipo</div>
-      <p class="about">La voz es la síntesis del propio dispositivo. La realidad aumentada está simulada: usa la cámara y el giroscopio, y coloca los puntos al azar. El asistente responde con un conjunto cerrado de respuestas sobre la visita. Los textos son provisionales.</p>
+      <p class="about">La voz es ElevenLabs v4 Turbo, generada en tiempo real; sin conexión, la del dispositivo. El guía responde con IA (Claude) solo sobre el contenido de la visita; sin conexión, con respuestas preparadas. La realidad aumentada está simulada: usa la cámara y el giroscopio, y coloca los puntos al azar. Los textos son provisionales.</p>
       <button class="btn second wide" data-act="reset">Volver a empezar la demo</button>
       <div class="set-end"></div>
     </div>
