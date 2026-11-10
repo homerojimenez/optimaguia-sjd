@@ -6,7 +6,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const { STOPS, TERMS, KB } = await import(path.join(here, '../js/data.js'));
+const { STOPS, TERMS, KB, PORTALS } = await import(path.join(here, '../js/data.js'));
 const plain = (l) => l.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1');
 
 const lines = [];
@@ -15,10 +15,11 @@ for (const s of STOPS) {
   lines.push('');
   lines.push(`Parada ${s.n} · id «${s.id}» · ${s.name} · planta ${s.floor} · unos ${s.min} min.`);
   lines.push(`Cómo llegar: ${s.howto}`);
-  lines.push(`Lo que cuenta la audioguía: ${s.chapters.flatMap((c) => c.lines.map(plain)).join(' ')}`);
-  if (s.kids) lines.push(`Para niños: ${s.kids}`);
-  const terms = s.ar.map((id) => TERMS[id]).filter(Boolean);
-  if (terms.length) lines.push(`Lo que se ve en la sala: ${terms.map((t) => `${t.name} (${t.cartela}): ${t.def}`).join(' | ')}`);
+  lines.push(`Visita histórica (San Juan de Dios en primera persona): ${s.tracks.historica.flatMap((c) => c.lines.map(plain)).join(' ')}`);
+  lines.push(`Visita de arte y arquitectura (narrador): ${s.tracks.arte.flatMap((c) => c.lines.map(plain)).join(' ')}`);
+  const terms = s.hotspots.map((id) => TERMS[id]).filter(Boolean);
+  if (terms.length) lines.push(`Obras de la sala: ${terms.map((t) => `${t.name} (${t.cartela}): ${t.def} ${(t.detail || []).join(' ')}`).join(' | ')}`);
+  if (s.portal) { const pp = PORTALS[s.portal]; lines.push(`Portal de realidad aumentada: ${pp.title} (${pp.sub}). ${pp.lines.join(' ')}`); }
 }
 lines.push('');
 lines.push('Otros datos de la visita:');

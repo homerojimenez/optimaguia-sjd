@@ -2,7 +2,7 @@
 // La voz es la síntesis del propio móvil (speechSynthesis), frase a frase, como sustituta
 // de la locución grabada. Si no hay voz, el reloj avanza solo con duraciones estimadas.
 
-import * as cloud from './cloud.js';
+import * as cloud from './cloud.js?v=5';
 
 const TERM_RE = /\[([^\]]+)\]\(([^)]+)\)/g;
 
@@ -79,12 +79,11 @@ export class Narrator {
   }
   get voiceActive() { return this.engine !== 'silent'; }
 
-  load(stop, { kids = false } = {}) {
+  load(stop, { route = "arte", chapters = null } = {}) {
     this._cancel();
     this.stop = stop; this.sents = []; this.chapters = [];
     let t = 0;
-    const chs = stop.chapters.map((c) => ({ ...c }));
-    if (kids && stop.kids) chs.push({ title: 'Para los peques', photo: chs[chs.length - 1].photo, focus: null, lines: [stop.kids], kids: true });
+    const chs = (chapters || stop.tracks?.[route] || stop.chapters).map((c) => ({ ...c })); this.route = route;
     chs.forEach((c, ci) => {
       const cs = { ...c, index: ci, start: t, sents: [] };
       c.lines.forEach((line) => {
@@ -205,9 +204,9 @@ export class Narrator {
     const u = new SpeechSynthesisUtterance(s.plain);
     u.lang = 'es-ES'; if (this.voice) u.voice = this.voice; u.rate = this.rate;
     this.boundary = false; this.charIdx = 0;
-    u.onstart = () => { u._started = true; };
+    u.onstart = () => { u._started = true; this.emit("voice", true); };
     u.onboundary = (e) => { if (this.utt === u) { this.boundary = true; this.charIdx = e.charIndex; } };
-    const end = () => { if (this.utt === u) this.uttDone = true; };
+    const end = () => { this.emit("voice", false); if (this.utt === u) this.uttDone = true; };
     u.onend = end; u.onerror = (e) => { if (e.error !== 'interrupted' && e.error !== 'canceled') end(); };
     this.utt = u; this.uttDone = false; this._uttAt = performance.now();
     // Si en 2,5 s la voz no arranca, se trabaja sin voz (navegadores sin síntesis en español).

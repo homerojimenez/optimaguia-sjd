@@ -3,18 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0B0C0E" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#0B0C0E">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="description" content="Prototipo funcional de la audioguía web de la Basílica de San Juan de Dios (Granada), por Óptima Cultura.">
+<meta name="description" content="Audioguía de la Basílica de San Juan de Dios (Granada), con OptimaGuía. Prototipo funcional v5.">
 <title>Audioguía · Basílica de San Juan de Dios</title>
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@200..800&display=swap">
-<link rel="stylesheet" href="css/app.css?v=2">
+<link rel="stylesheet" href="css/app.css?v=5">
 <link rel="preload" as="image" href="assets/img/sjd-8.jpg">
 <script type="importmap">
 { "imports": {
@@ -29,13 +27,14 @@
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/InertiaPlugin.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/ScrollTrigger.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/ScrollToPlugin.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/Observer.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
-<script type="module" src="js/app.js?v=2"></script>
+<script type="module" src="js/app.js?v=5"></script>
 </head>
 <body>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" id="sprite">
+  <!-- OptimaGuía: el «punto de escucha» (provisional) -->
+  <symbol id="og-mark" viewBox="0 0 48 48"><path d="M33.5 7.6A18 18 0 1 0 42 22" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><circle cx="39.5" cy="10.5" r="5" fill="currentColor"/></symbol>
   <symbol id="i-pause" viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.8" height="14" rx="1.2"/><rect x="13.7" y="5" width="3.8" height="14" rx="1.2"/></symbol>
   <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.2v13.6c0 .8.9 1.3 1.5.8l10.4-6.8c.6-.4.6-1.2 0-1.6L9.5 4.4C8.9 4 8 4.4 8 5.2z"/></symbol>
   <symbol id="i-b15" viewBox="0 0 24 24"><path d="M5 12a7.5 7.5 0 1 0 2.3-5.4"/><path d="M4.7 3.6v3.6h3.6"/><text x="12.4" y="15.3" text-anchor="middle" font-size="7.2" font-weight="700" stroke="none" fill="currentColor" font-family="Atkinson Hyperlegible Next, system-ui">15</text></symbol>
@@ -54,38 +53,48 @@
   <symbol id="i-stairs" viewBox="0 0 24 24"><path d="M4 19h4v-4h4v-4h4V7h4"/></symbol>
   <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5.5" y="10.5" width="13" height="9" rx="2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></symbol>
   <symbol id="i-off" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></symbol>
-  <symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path class="wv1" d="M15.5 9a4 4 0 0 1 0 6"/><path class="wv2" d="M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+  <symbol id="i-speaker" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
   <symbol id="i-headph" viewBox="0 0 24 24"><path d="M4.5 15v-3a7.5 7.5 0 0 1 15 0v3"/><rect x="3.5" y="14" width="4" height="6" rx="1.5"/><rect x="16.5" y="14" width="4" height="6" rx="1.5"/></symbol>
   <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 6.5h10M9 6.5V18M14.5 11.5h6M17.5 11.5V18"/></symbol>
-  <symbol id="i-both" viewBox="0 0 24 24"><path d="M3.5 13v-1.5a6 6 0 0 1 12 0V13"/><rect x="2.5" y="12.5" width="3.5" height="5" rx="1.3"/><rect x="13" y="12.5" width="3.5" height="5" rx="1.3"/><path d="M18.5 6.5h3M18.5 10h3M19.5 13.5h2"/></symbol>
   <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></symbol>
   <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.4 3.5 5.3 3.5 8.5s-1.1 6.1-3.5 8.5c-2.4-2.4-3.5-5.3-3.5-8.5s1.1-6.1 3.5-8.5z"/></symbol>
-  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="8.5" cy="8" r="3"/><path d="M3 19c.5-3.2 2.7-5 5.5-5s5 1.8 5.5 5"/><circle cx="16.5" cy="9" r="2.5"/><path d="M15.5 14.2c.3-.1.7-.2 1-.2 2.4 0 4.2 1.5 4.6 4.3"/></symbol>
-  <symbol id="i-hourglass" viewBox="0 0 24 24"><path d="M7 3.5h10M7 20.5h10M8 3.5c0 4 2 5.5 4 8.5-2 3-4 4.5-4 8.5M16 3.5c0 4-2 5.5-4 8.5 2 3 4 4.5 4 8.5"/></symbol>
-  <symbol id="i-follow" viewBox="0 0 24 24"><path d="M3.5 14v-2a6 6 0 0 1 12 0v2"/><rect x="2.5" y="13.5" width="3.5" height="5.5" rx="1.3"/><rect x="13" y="13.5" width="3.5" height="5.5" rx="1.3"/><path d="M19 7.5h2.5M19 11h2.5M20 14.5h1.5"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="m6.5 9.5 5.5 5.5 5.5-5.5"/></symbol>
   <symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><path d="M6 10h.01M9.5 10h.01M13 10h.01M16.5 10h.01M6.5 14h11"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/></symbol>
   <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></symbol>
   <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M10.5 18.5h3"/></symbol>
-  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01"/></symbol>
-  <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3.5c.6 4.2 2.3 5.9 6.5 6.5-4.2.6-5.9 2.3-6.5 6.5-.6-4.2-2.3-5.9-6.5-6.5 4.2-.6 5.9-2.3 6.5-6.5zM18.5 15.5c.3 1.8 1 2.5 2.8 2.8-1.8.3-2.5 1-2.8 2.8-.3-1.8-1-2.5-2.8-2.8 1.8-.3 2.5-1 2.8-2.8z"/></symbol>
-  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M19.5 14.5A7.5 7.5 0 0 1 9.5 4.5a7.5 7.5 0 1 0 10 10z"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="6" r="2.5"/><path d="M8.5 18H15a3.5 3.5 0 0 0 0-7H9a3.5 3.5 0 0 1 0-7h6.5"/></symbol>
+  <symbol id="i-access" viewBox="0 0 24 24"><circle cx="12" cy="4.8" r="1.8"/><path d="M5 8.5c2.3.7 4.6 1 7 1s4.7-.3 7-1M12 9.5V14m0 0-3 6.5M12 14l3 6.5"/></symbol>
+  <symbol id="i-ear" viewBox="0 0 24 24"><path d="M7 9a5 5 0 0 1 10 0c0 3-3 4-3 6.5a3 3 0 0 1-5.5 1.6"/><path d="M10 9.5a2 2 0 0 1 4 0"/></symbol>
+  <symbol id="i-auto" viewBox="0 0 24 24"><path d="M12 3.5c.6 4.2 2.3 5.9 6.5 6.5-4.2.6-5.9 2.3-6.5 6.5-.6-4.2-2.3-5.9-6.5-6.5 4.2-.6 5.9-2.3 6.5-6.5zM18.5 15.5c.3 1.8 1 2.5 2.8 2.8-1.8.3-2.5 1-2.8 2.8-.3-1.8-1-2.5-2.8-2.8 1.8-.3 2.5-1 2.8-2.8z"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4.5 8.5A1.5 1.5 0 0 1 6 7h2.2l1.4-2h4.8l1.4 2H18a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 18 19H6a1.5 1.5 0 0 1-1.5-1.5z"/><circle cx="12" cy="12.8" r="3.3"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3.5v11M7.5 8 12 3.5 16.5 8"/><path d="M5 12.5v6A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-6"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19.5h14"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="m20.5 16-4.5-4.5L7 19"/></symbol>
+  <symbol id="i-portal" viewBox="0 0 24 24"><path d="M6 20.5V10a6 6 0 0 1 12 0v10.5M4 20.5h16"/><path d="M12 8v.01M9.5 13l1.5 1.5 3.5-3.5"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.6"/><path d="M20 4.5v3.8h-3.8"/></symbol>
+  <symbol id="i-walk" viewBox="0 0 24 24"><circle cx="13" cy="4.5" r="1.8"/><path d="m9 20.5 2.5-6 2.5 2.5V21M8 11l3-3.5 3 1 2 3M11.5 14.5 10.5 10"/></symbol>
+  <symbol id="i-location" viewBox="0 0 24 24"><path d="M12 21s6.5-5.6 6.5-11a6.5 6.5 0 0 0-13 0C5.5 15.4 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></symbol>
+  <symbol id="i-music" viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></symbol>
+  <symbol id="i-queue" viewBox="0 0 24 24"><path d="M4 7h11M4 12h11M4 17h7M17 14v6l4.5-3z"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M5.5 21V4M5.5 4.5h11l-2.5 4 2.5 4h-11"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3.8 2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8z"/></symbol>
+  <symbol id="i-cube" viewBox="0 0 24 24"><path d="M12 3.5 19.5 7.8v8.4L12 20.5 4.5 16.2V7.8z"/><path d="M4.5 7.8 12 12l7.5-4.2M12 12v8.5"/></symbol>
 </svg>
 
-<!-- Panel lateral en ordenador: qué es y QR para abrirlo en el móvil -->
 <aside class="desk" aria-label="Sobre este prototipo">
   <div class="desk-in">
-    <div class="desk-brand"><svg class="seal"><use href="#logo-emblem"/></svg><span>OptimaGuía · Óptima Cultura</span></div>
+    <div class="desk-brand"><svg class="og"><use href="#og-mark"/></svg><span>OptimaGuía · Óptima Cultura</span></div>
     <h1>Audioguía de la Basílica de San Juan de Dios</h1>
-    <p>Prototipo funcional para presentar al equipo. La pista, la transcripción, el plano, el asistente y la realidad aumentada funcionan; la RA está simulada con la cámara y puntos colocados al azar.</p>
+    <p>Prototipo funcional v5 para desarrollo. Dos recorridos (histórico, con San Juan de Dios en primera persona, y de arte y arquitectura), modos accesibles, realidad aumentada con puntos, obras en 3D y dos portales, y el cierre con resumen y valoración.</p>
     <div class="desk-qr"><div id="qr" aria-label="Código QR para abrir el prototipo en el móvil"></div><div><b>Ábrelo en tu móvil</b><span>Escanea el código con la cámara. La RA usa la cámara trasera y el giroscopio.</span></div></div>
     <ul class="desk-tips">
-      <li><b>Voz:</b> ElevenLabs v4 Turbo en tiempo real, con la palabra que suena resaltada.</li>
-      <li><b>Guía con IA:</b> Claude responde solo con el contenido de la visita y cita la parada.</li>
-      <li><b>RA en el ordenador:</b> usa la webcam, o la foto de la sala si no hay cámara. Arrastra para mirar alrededor.</li>
-      <li><b>Textos:</b> provisionales, pendientes de la propuesta de contenido.</li>
+      <li><b>Voz:</b> ElevenLabs v4 Turbo en tiempo real, con la palabra que suena resaltada. Música de fondo que baja sola cuando habla.</li>
+      <li><b>Guía con IA:</b> responde solo con el contenido de la visita y cita la parada.</li>
+      <li><b>Ubicación y RA:</b> simuladas en el prototipo. Arrastra para mirar alrededor en el ordenador.</li>
     </ul>
   </div>
 </aside>
@@ -93,25 +102,40 @@
 <div class="phone">
 <div id="app" class="app">
 
-  <!-- ========== Arranque ========== -->
-  <div id="splash" aria-hidden="true"><svg class="seal"><use href="#logo-emblem"/></svg></div>
-
-  <!-- ========== E0 · Portada ========== -->
-  <section class="screen" id="cover" aria-label="Portada">
-    <div class="cover-photo"><img src="assets/img/sjd-8.jpg" alt="La nave de la basílica, con el retablo mayor al fondo"></div>
-    <div class="cover-logo"><span class="logo solid"><svg class="seal"><use href="#logo-emblem"/></svg><svg class="word"><use href="#logo-word"/></svg></span></div>
-    <div class="cover-body">
-      <h1 class="cover-title">Audioguía</h1>
-      <p class="lead">Diez paradas, unos 50 minutos. Escucha cada sala mientras la recorres.</p>
+  <!-- ========== Carga: OptimaGuía para la basílica ========== -->
+  <div id="splash" aria-label="Cargando la audioguía">
+    <div class="sp-in">
+      <div class="og-lock"><svg class="og-mark"><use href="#og-mark"/></svg><span class="og-word">Optima<b>Guía</b></span></div>
+      <div class="sp-line"></div>
+      <div class="sp-for">Audioguía oficial de la</div>
+      <div class="sjd-lock"><svg class="seal"><use href="#logo-emblem"/></svg><svg class="word"><use href="#logo-word"/></svg></div>
     </div>
-    <div class="cover-foot">
+    <div class="sp-bar" aria-hidden="true"><i id="sp-prog"></i></div>
+  </div>
+
+  <!-- ========== E0 · Bienvenida ========== -->
+  <section class="screen" id="cover" aria-label="Bienvenida">
+    <div class="cv-photo"><img src="assets/img/sjd-8.jpg" alt="La nave de la basílica, con el retablo mayor al fondo"></div>
+    <div class="cv-top">
+      <span class="logo solid"><svg class="seal"><use href="#logo-emblem"/></svg><svg class="word"><use href="#logo-word"/></svg></span>
+      <button class="pill glass" data-act="lang" aria-label="Cambiar idioma"><svg class="i"><use href="#i-globe"/></svg><span class="lang-code">ES</span></button>
+    </div>
+    <div class="cv-card">
+      <span class="tag-over"><svg class="i"><use href="#i-headph"/></svg>Audioguía oficial</span>
+      <h1 class="cv-title">Basílica de San Juan de Dios</h1>
+      <p class="cv-sub">Granada · barroco del siglo XVIII</p>
+      <div class="stats">
+        <div><b class="tnum">10</b><span>espacios</span></div>
+        <div><b class="tnum">2</b><span>plantas</span></div>
+        <div><b class="tnum">50</b><span>minutos</span></div>
+      </div>
       <button class="btn primary wide" data-act="start">Empezar</button>
-      <button class="btn text" data-act="cover-lang"><span class="lang-name">Español</span> · Cambiar idioma</button>
+      <div class="made-by">Con tecnología <svg class="og"><use href="#og-mark"/></svg><b>OptimaGuía</b></div>
     </div>
   </section>
 
-  <!-- ========== E1–E4 · Encuesta ========== -->
-  <section class="screen" id="survey" aria-label="Encuesta inicial">
+  <!-- ========== E1–E5 · Cuestionario ========== -->
+  <section class="screen" id="survey" aria-label="Cuestionario inicial">
     <div class="steps">
       <button class="back" data-act="survey-back"><svg class="i"><use href="#i-back"/></svg>Atrás</button>
       <span class="count tnum" id="sv-count">Paso 1 de 4</span>
@@ -119,74 +143,72 @@
     </div>
     <div class="sv-progress" aria-hidden="true"><i id="sv-prog"></i></div>
     <div class="sv-stage" id="sv-stage"></div>
-    <div class="sv-foot"><button class="btn primary wide" id="sv-next" data-act="survey-next">Continuar</button></div>
+    <div class="sv-foot"><button class="btn primary wide" id="sv-next" data-act="survey-next" disabled>Continuar</button></div>
   </section>
 
   <!-- ========== H0 · Inicio ========== -->
   <section class="screen" id="home" aria-label="Inicio">
-    <div class="home-scroll" id="home-scroll">
-      <div class="hero" id="hero"><img src="assets/img/sjd-8.jpg" alt="La nave hacia el altar mayor"></div>
-      <div class="intro">
-        <div class="over hr">Granada · barroco del siglo XVIII</div>
-        <h1 class="hr" id="home-title">Basílica de San Juan de Dios</h1>
-        <p class="lead hr">La Orden Hospitalaria levantó este templo para custodiar los restos de su fundador, que se guardan en el camarín.</p>
-        <div class="plan hr" id="home-plan"></div>
-        <button class="btn primary wide go hr" id="home-go" data-act="home-go"><svg class="i fill"><use href="#i-play"/></svg><span>Empezar por la nave</span></button>
-      </div>
-      <div class="sect">
-        <div class="sect-h hr"><h3>Las paradas</h3><span id="home-count" class="tnum">0 de 10 escuchadas</span></div>
-        <div id="home-stops"></div>
-        <button class="allstops hr" data-act="stops"><span id="home-all">Ver las 10 paradas</span><svg class="i"><use href="#i-chev"/></svg></button>
-      </div>
-      <div class="sect">
-        <button class="tutcard hr" data-act="tutorial" aria-label="Ver el tutorial: cómo funciona la guía">
-          <img src="assets/img/sjd-14.jpg" alt="">
-          <span class="txt"><span><span class="k">Tutorial</span><b>Cómo funciona la guía</b><small>Escuchar, leer, preguntar y la RA</small></span><span class="pill"><svg class="i fill"><use href="#i-play"/></svg>1 min</span></span>
-        </button>
-      </div>
-      <div class="two">
-        <button class="tile hr" data-act="map"><svg class="i"><use href="#i-map"/></svg><span><b>Plano</b><small>Dos plantas y las paradas</small></span></button>
-        <button class="tile hr" data-act="assist"><svg class="i"><use href="#i-chat"/></svg><span><b>Pregunta al guía</b><small>Sobre la basílica, por voz o escrito</small></span></button>
-      </div>
-      <button class="settings-link hr" data-act="settings"><svg class="i"><use href="#i-sliders"/></svg>Ajustes y accesibilidad<svg class="i chev"><use href="#i-chev"/></svg></button>
-      <p class="made">Hecho por OptimaGuía · Óptima Cultura<br>Prototipo funcional · textos provisionales</p>
-    </div>
-    <div class="topbar" id="home-bar">
-      <button class="logo solid" data-act="top" aria-label="Basílica de San Juan de Dios. Subir al principio"><svg class="seal"><use href="#logo-emblem"/></svg><svg class="word"><use href="#logo-word"/></svg></button>
+    <div class="bar">
+      <button class="logo" data-act="top" aria-label="Basílica de San Juan de Dios"><svg class="seal"><use href="#logo-emblem"/></svg><svg class="word"><use href="#logo-word"/></svg></button>
       <div class="tools">
-        <button class="ib solid" data-act="map" aria-label="Plano de la visita"><svg class="i"><use href="#i-map"/></svg></button>
-        <button class="ib solid lang-code" data-act="lang" aria-label="Idioma y ajustes">ES</button>
+        <button class="ib" data-act="map" aria-label="Plano"><svg class="i"><use href="#i-map"/></svg></button>
+        <button class="ib lang-code" data-act="lang" aria-label="Idioma y ajustes">ES</button>
       </div>
     </div>
+    <div class="home-scroll" id="home-scroll">
+      <div class="hm-hero" id="hm-hero" role="button" tabindex="0" data-act="home-go">
+        <img id="hm-hero-img" src="assets/img/sjd-8.jpg" alt="">
+        <div class="hm-hero-in">
+          <span class="chip glass" id="hm-route"><svg class="i"><use href="#i-route"/></svg>Histórica · con San Juan de Dios</span>
+          <div class="hm-hero-b">
+            <div><small id="hm-k">Empieza en</small><b id="hm-title">La nave</b><span class="hm-prog"><i id="hm-prog"></i></span><span id="hm-meta" class="tnum">0 de 10 espacios</span></div>
+            <span class="fab" aria-hidden="true"><svg class="i fill"><use href="#i-play"/></svg></span>
+          </div>
+        </div>
+      </div>
+      <div class="hm-modes" id="hm-modes"></div>
+      <div class="sect-h"><h3>Los espacios</h3><button data-act="stops" id="hm-all">Ver los 10</button></div>
+      <div class="hm-rail" id="hm-rail"></div>
+      <div class="hm-grid">
+        <button class="tile" data-act="map"><span class="tile-ill plan-ill" id="plan-ill"></span><b>Plano</b><small>Dos plantas y los puntos de audio</small></button>
+        <button class="tile" data-act="guide"><span class="tile-ill av" id="hm-av"></span><b id="hm-guide-t">San Juan de Dios</b><small id="hm-guide-s">Pregúntale lo que quieras</small></button>
+        <button class="tile" data-act="tutorial"><span class="tile-ill icon"><svg class="i"><use href="#i-info"/></svg></span><b>Cómo funciona</b><small>Un minuto: escuchar, leer, RA</small></button>
+        <button class="tile" data-act="settings"><span class="tile-ill icon"><svg class="i"><use href="#i-sliders"/></svg></span><b>Ajustes</b><small>Texto, voz, música y accesibilidad</small></button>
+      </div>
+      <button class="finish" data-act="finish"><svg class="i"><use href="#i-flag"/></svg>Terminar la visita</button>
+      <p class="made">Audioguía oficial · con tecnología OptimaGuía de Óptima Cultura<br>Prototipo funcional v5 · textos provisionales</p>
+    </div>
+    <button class="askbar" data-act="guide" id="hm-ask"><span class="av-s" id="hm-ask-av"></span><span class="t" id="hm-ask-t">Pregúntale a San Juan de Dios</span><svg class="i"><use href="#i-chat"/></svg></button>
   </section>
 
   <!-- ========== G1 · Reproductor ========== -->
   <section class="screen" id="player" aria-label="Reproductor">
     <div class="bar">
-      <button class="logo" data-act="home" aria-label="Basílica de San Juan de Dios. Volver al inicio"><svg class="seal"><use href="#logo-emblem"/></svg><svg class="word"><use href="#logo-word"/></svg></button>
+      <button class="logo" data-act="home" aria-label="Volver al inicio"><svg class="seal"><use href="#logo-emblem"/></svg><svg class="word"><use href="#logo-word"/></svg></button>
       <div class="tools">
-        <button class="ib" data-act="map" aria-label="Plano de la visita"><svg class="i"><use href="#i-map"/></svg></button>
+        <button class="ib" data-act="map" aria-label="Plano"><svg class="i"><use href="#i-map"/></svg></button>
         <button class="ib lang-code" data-act="lang" aria-label="Idioma y ajustes">ES</button>
       </div>
     </div>
     <div class="visit">
       <div class="segbar"><div class="segs" id="segs"></div><span class="cnt tnum" id="segcnt">1/10</span></div>
       <div class="stoptitle">
-        <button class="sname" data-act="stops" aria-label="Lista de paradas"><span id="p-name">La nave</span><svg class="i"><use href="#i-down"/></svg></button>
+        <button class="sname" data-act="stops" aria-label="Lista de espacios"><span id="p-name">La nave</span><svg class="i"><use href="#i-down"/></svg></button>
         <span class="floor-pill" id="p-floor">Planta 0</span>
       </div>
+      <div class="narra" id="p-narra"><span class="av-s"></span><span>Narra <b>San Juan de Dios</b>, en primera persona</span></div>
     </div>
     <div class="now-photo" id="p-photo">
       <div class="ph" data-act="photo-term"></div>
-      <button class="ar-chip" data-act="ar"><svg class="i"><use href="#i-ar"/></svg>Ver en RA</button>
+      <button class="ar-chip" data-act="ar" id="p-arbtn"><svg class="i"><use href="#i-camera"/></svg>Abrir la cámara</button>
       <span class="count tnum" id="p-count"><span class="roll"><span>1</span></span> / 4</span>
     </div>
     <div class="caption" id="p-caption"></div>
+    <div class="queue" id="p-queue" hidden><svg class="i"><use href="#i-queue"/></svg><span>A continuación: <b id="p-queue-t"></b></span><button data-act="unqueue" aria-label="Quitar de la cola"><svg class="i"><use href="#i-x"/></svg></button></div>
     <div class="lyric-wrap">
       <div class="lyric" id="lyric" aria-live="polite"></div>
       <button class="back-now" id="back-now" data-act="back-now"><svg class="i"><use href="#i-down"/></svg>Volver a lo que suena</button>
       <div class="endcard" id="endcard"></div>
-      <div class="simple-art" id="simple-art"></div>
     </div>
     <div class="player">
       <div class="chap"><b id="p-chap">—</b><span id="p-chapn" class="tnum">Capítulo 1 de 4</span></div>
@@ -197,23 +219,27 @@
         <button class="glyph" data-act="back15" aria-label="Atrás 15 segundos"><svg class="i"><use href="#i-b15"/></svg></button>
         <button class="play" id="play" data-act="toggle" aria-label="Reproducir"><svg class="i fill ic-play"><use href="#i-play"/></svg><svg class="i fill ic-pause"><use href="#i-pause"/></svg></button>
         <button class="glyph" data-act="fwd15" aria-label="Adelante 15 segundos"><svg class="i"><use href="#i-f15"/></svg></button>
-        <button class="glyph" data-act="next" aria-label="Siguiente parada"><svg class="i"><use href="#i-next"/></svg></button>
+        <button class="glyph" data-act="next" aria-label="Siguiente espacio"><svg class="i"><use href="#i-next"/></svg></button>
       </div>
     </div>
-    <button class="ask" data-act="assist"><span id="p-ask">Pregunta sobre la nave</span><span class="mic"><svg class="i"><use href="#i-mic"/></svg></span></button>
+    <button class="ask" data-act="guide"><span class="av-s"></span><span class="t" id="p-ask">Pregúntale a San Juan de Dios</span><span class="mic"><svg class="i"><use href="#i-chat"/></svg></span></button>
   </section>
 
-  <!-- ========== G4 · Plano ========== -->
+  <!-- ========== G4 · Plano (las dos plantas) ========== -->
   <section class="screen" id="map" aria-label="Plano">
     <div class="bar">
-      <button class="logo" data-act="home" aria-label="Basílica de San Juan de Dios. Volver al inicio"><svg class="seal"><use href="#logo-emblem"/></svg><svg class="word"><use href="#logo-word"/></svg></button>
-      <div class="tools"><button class="ib lang-code" data-act="lang" aria-label="Idioma y ajustes">ES</button></div>
+      <button class="logo" data-act="home" aria-label="Volver al inicio"><svg class="seal"><use href="#logo-emblem"/></svg><svg class="word"><use href="#logo-word"/></svg></button>
+      <div class="tools">
+        <button class="ib on" data-act="back-guide" aria-label="Volver a la audioguía"><svg class="i"><use href="#i-headph"/></svg></button>
+        <button class="ib lang-code" data-act="lang" aria-label="Idioma y ajustes">ES</button>
+      </div>
     </div>
-    <div class="segm modes" data-segm="modes"><span class="ind"></span><button data-act="to-guide">Guía</button><button class="on" aria-pressed="true">Plano</button></div>
+    <div class="map-head"><h2>Plano</h2><div class="fchips" id="fchips"><button data-floor="1">Planta 1</button><button data-floor="0">Planta 0</button></div></div>
     <div class="mapcard" id="mapcard">
       <div class="plan-wrap" id="plan-wrap"></div>
-      <div class="floors" id="floors" role="tablist" aria-label="Planta"><button data-floor="1" role="tab">1</button><button data-floor="0" role="tab">0</button></div>
-      <button class="center" data-act="center" aria-label="Centrar el plano en tu posición"><svg class="i"><use href="#i-target"/></svg></button>
+      <div class="zoom"><button data-act="zoom-in" aria-label="Acercar"><svg class="i"><use href="#i-plus"/></svg></button><button data-act="zoom-out" aria-label="Alejar"><svg class="i"><use href="#i-minus"/></svg></button></div>
+      <button class="center" data-act="center" aria-label="Centrar en tu posición"><svg class="i"><use href="#i-target"/></svg></button>
+      <div class="legend"><span><i class="lg-here"></i>Estás aquí</span><span><i class="lg-done"></i>Escuchado</span></div>
     </div>
     <div class="mapsheet" id="mapsheet"></div>
   </section>
@@ -222,31 +248,32 @@
   <section class="screen" id="settings" aria-label="Ajustes">
     <div class="set-head"><h2>Ajustes</h2><button class="ib" data-act="close-settings" aria-label="Cerrar ajustes"><svg class="i"><use href="#i-x"/></svg></button></div>
     <div class="set-scroll" id="set-scroll">
+      <div class="sec">Tu visita</div>
+      <div class="segm" data-segm="route"><span class="ind"></span><button data-v="historica">Histórica</button><button data-v="arte">Arte y arquitectura</button></div>
+      <button class="row" data-act="redo-survey"><svg class="i lead"><use href="#i-route"/></svg><span class="t">Cambiar el tipo de visita<small id="set-visit">Con realidad aumentada</small></span><svg class="i chev"><use href="#i-chev"/></svg></button>
       <div class="sec">Idioma</div>
       <button class="row" data-act="lang"><span class="t"><span class="lang-name">Español</span></span><span class="lang-code-txt lang-code">ES</span><svg class="i chev"><use href="#i-chev"/></svg></button>
       <div class="sec">Tamaño del texto</div>
       <p class="preview" id="set-preview">En el centro está la <span class="term static">mesa calicera</span>.</p>
       <div class="segm" data-segm="textSize"><span class="ind"></span><button data-v="normal">Normal</button><button data-v="grande">Grande</button><button data-v="muy">Muy grande</button></div>
-      <div class="sec">Velocidad de la voz</div>
+      <div class="sec">Voz y música</div>
       <div class="segm" data-segm="speed"><span class="ind"></span><button data-v="0.75">0,75×</button><button data-v="1">1×</button><button data-v="1.25">1,25×</button><button data-v="1.5">1,5×</button></div>
+      <div class="rows">
+        <button class="row" data-toggle="voice"><span class="t">Leer en voz alta<small>ElevenLabs v4 Turbo, en tiempo real</small></span><span class="sw" role="switch"></span></button>
+        <button class="row" data-toggle="music"><span class="t">Música de fondo<small>Baja sola cuando habla la voz</small></span><span class="sw" role="switch"></span></button>
+      </div>
+      <label class="slider"><svg class="i"><use href="#i-music"/></svg><input type="range" min="0" max="100" value="100" id="music-level" aria-label="Volumen de la música"></label>
       <div class="sec">Apariencia</div>
       <div class="segm" data-segm="theme"><span class="ind"></span><button data-v="auto">Automática</button><button data-v="light">Clara</button><button data-v="dark">Oscura</button></div>
       <div class="sec">Accesibilidad</div>
       <div class="rows">
-        <button class="row" data-toggle="voice"><span class="t">Leer en voz alta<small>ElevenLabs v4 Turbo, en tiempo real</small></span><span class="sw" role="switch"></span></button>
+        <button class="row" data-toggle="bigText"><span class="t">Texto en pantalla, en grande<small>Para quien oye poco o nada</small></span><span class="sw" role="switch"></span></button>
         <button class="row" data-toggle="subs"><span class="t">Subtítulos sobre la cámara</span><span class="sw" role="switch"></span></button>
-        <button class="row" data-toggle="ad"><span class="t">Audiodescripción<small>Describe lo que hay en cada sala</small></span><span class="sw" role="switch"></span></button>
         <button class="row" data-toggle="contrast"><span class="t">Alto contraste</span><span class="sw" role="switch"></span></button>
         <button class="row" data-toggle="reduce"><span class="t">Reducir movimiento</span><span class="sw" role="switch"></span></button>
       </div>
-      <div class="sec">Modos</div>
-      <div class="rows">
-        <button class="row" data-mode="listen"><svg class="i lead"><use href="#i-headph"/></svg><span class="t">Modo sencillo<small>Solo audio, con botones grandes</small></span><span class="radio"></span></button>
-        <button class="row" data-mode="both"><svg class="i lead"><use href="#i-both"/></svg><span class="t">Escuchar y leer<small>El modo de serie</small></span><span class="radio"></span></button>
-        <button class="row" data-mode="voice"><svg class="i lead"><use href="#i-mic"/></svg><span class="t">Modo voz<small>Di «pausa», «sigue» o «siguiente parada»</small></span><span class="radio"></span></button>
-      </div>
       <div class="sec">Sobre este prototipo</div>
-      <p class="about">La voz es ElevenLabs v4 Turbo, generada en tiempo real; sin conexión, la del dispositivo. El guía responde con IA (Claude) solo sobre el contenido de la visita; sin conexión, con respuestas preparadas. La realidad aumentada está simulada: usa la cámara y el giroscopio, y coloca los puntos al azar. Los textos son provisionales.</p>
+      <p class="about">Voz con ElevenLabs v4 Turbo y guía con IA (Claude) limitado al contenido de la visita; sin conexión, la voz del dispositivo y respuestas preparadas. La ubicación y la realidad aumentada están simuladas: los puntos se colocan al azar, los modelos 3D y los portales son provisionales. Música generada con ElevenLabs Music. Textos provisionales.</p>
       <button class="btn second wide" data-act="reset">Volver a empezar la demo</button>
       <div class="set-end"></div>
     </div>
@@ -259,7 +286,6 @@
     <div class="ar-world" id="ar-world">
       <canvas id="ar-gl"></canvas>
       <canvas id="ar-dots"></canvas>
-      <svg class="ar-pointer" aria-hidden="true"><line id="ar-line" x1="0" y1="0" x2="0" y2="0"/></svg>
       <div class="ar-marks" id="ar-marks"></div>
     </div>
     <div class="ar-edge" id="ar-edge" aria-hidden="true"><i class="arw"><svg class="i"><use href="#i-chev"/></svg></i><span></span></div>
@@ -267,12 +293,13 @@
     <div class="ar-top ar-ui">
       <div class="row1">
         <span class="seal-only"><svg class="seal"><use href="#logo-emblem"/></svg></span>
-        <div class="ttl"><span id="ar-name">Sacristía</span><small id="ar-sub">Visita en realidad aumentada</small></div>
-        <button class="ib lang-code" data-act="lang" aria-label="Idioma">ES</button>
+        <div class="ttl"><span id="ar-name">Sacristía</span><small id="ar-sub">Realidad aumentada</small></div>
+        <span class="auto-chip" id="ar-auto" hidden><svg class="i"><use href="#i-auto"/></svg>Automática</span>
         <button class="ib x" data-act="ar-close" aria-label="Salir de la realidad aumentada"><svg class="i"><use href="#i-x"/></svg></button>
       </div>
       <div class="segbar"><div class="segs" id="ar-segs"></div><span class="cnt tnum" id="ar-segcnt">1/10</span></div>
     </div>
+    <div class="portal-bar ar-ui" id="portal-bar"><span><svg class="i"><use href="#i-portal"/></svg><b id="pb-title">Portal</b><small id="pb-sub"></small></span><button class="ib" data-act="portal-close" aria-label="Cerrar el portal"><svg class="i"><use href="#i-x"/></svg></button></div>
     <div class="scan" id="scan" aria-live="polite">
       <div class="reticle">
         <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
@@ -282,32 +309,76 @@
       <p><b id="scan-t">Mueve el móvil despacio</b><span id="scan-s">para reconocer la sala</span></p>
     </div>
     <div class="ar-found" id="ar-found"><svg class="i"><use href="#i-check"/></svg><span>Sala reconocida</span></div>
-    <div class="bubble ar-ui" id="bubble">
-      <div class="who"><i></i>El guía</div>
-      <p id="bubble-p"></p>
-    </div>
+    <div class="subs ar-ui" id="subs"><div class="who"><span class="av-s"></span><b id="subs-who">San Juan de Dios</b></div><p id="subs-p"></p><span class="sline"><i id="subs-prog"></i></span></div>
     <div class="ardock ar-ui" id="ardock">
       <button class="pp" data-act="toggle" aria-label="Pausa"><svg class="i fill ic-play"><use href="#i-play"/></svg><svg class="i fill ic-pause"><use href="#i-pause"/></svg></button>
       <button class="d" data-act="ar-map"><svg class="i"><use href="#i-map"/></svg>Plano</button>
-      <button class="d" data-act="ar-next"><svg class="i"><use href="#i-next"/></svg><span id="ar-nextname">Siguiente</span></button>
-      <button class="talk" data-act="talk"><svg class="i"><use href="#i-mic"/></svg>Habla con el guía</button>
+      <button class="shutter" data-act="shot" aria-label="Hacer una foto"><i></i></button>
+      <button class="d photos" data-act="photos" aria-label="Tus fotos"><span class="ph-thumb" id="ph-thumb"><svg class="i"><use href="#i-image"/></svg></span><span id="ph-count">Fotos</span></button>
+      <button class="d" data-act="guide"><svg class="i"><use href="#i-chat"/></svg>Pregunta</button>
     </div>
-    <div class="talksheet" id="talksheet">
-      <div class="grab"></div>
-      <div class="ts-listen" id="ts-listen">
-        <div class="top"><span class="lis"><span class="wave" id="wave"><i></i><i></i><i></i><i></i><i></i></span><span id="ts-state">Te escucho</span></span><button class="ib" data-act="talk-close" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></div>
-        <p class="you" id="ts-you"><span>Pregúntale lo que quieras…</span></p>
-        <p class="ts-demo" id="ts-demo"></p>
-        <div class="hint">También puedes preguntarle</div>
-        <div class="sugg" id="ts-sugg"></div>
-        <div class="bottom">
-          <button class="stopbtn" id="ts-stop" data-act="talk-mic" aria-label="Dejar de escuchar"><i></i><svg class="i"><use href="#i-mic"/></svg></button>
-          <form class="kbd" id="ts-form"><svg class="i"><use href="#i-keyboard"/></svg><input id="ts-input" type="text" placeholder="Escribir" autocomplete="off" enterkeyhint="send" aria-label="Escribe tu pregunta"></form>
-        </div>
-      </div>
-    </div>
+    <div class="flash" id="flash"></div>
     <p class="ar-note" id="ar-note">Sin cámara: vista simulada con la foto de la sala</p>
   </section>
+
+  <!-- ========== V1 · Modo voz (discapacidad visual) ========== -->
+  <section class="screen voice" id="voice" aria-label="Visita por voz">
+    <div class="vc-top"><span class="seal-only dark"><svg class="seal"><use href="#logo-emblem"/></svg></span><span class="vc-k">Visita por voz</span><button class="ib" data-act="voice-exit" aria-label="Salir del modo voz"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <div class="vc-main">
+      <p class="vc-state" id="vc-state">Sonando</p>
+      <h1 id="vc-name">La nave</h1>
+      <p class="vc-line" id="vc-line" aria-live="polite"></p>
+    </div>
+    <div class="vc-mic" id="vc-mic"><span class="wave" id="vc-wave"><i></i><i></i><i></i><i></i><i></i></span><span id="vc-mic-t">Te escucho. Di «pausa», «repite» o haz una pregunta.</span></div>
+    <button class="vc-play" data-act="toggle" aria-label="Pausa o reproducir"><svg class="i fill ic-play"><use href="#i-play"/></svg><svg class="i fill ic-pause"><use href="#i-pause"/></svg><span id="vc-play-t">Pausa</span></button>
+    <div class="vc-row"><button data-act="vc-repeat">Repetir</button><button data-act="next">Siguiente</button></div>
+  </section>
+
+  <!-- ========== Fin · resumen, valoración y gracias ========== -->
+  <section class="screen recap" id="recap" aria-label="Resumen de tu visita">
+    <div class="rc-bars" id="rc-bars"></div>
+    <div class="rc-top"><span class="og-lock sm"><svg class="og-mark"><use href="#og-mark"/></svg><span class="og-word">Optima<b>Guía</b></span></span><button class="ib" data-act="recap-close" aria-label="Cerrar el resumen"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <div class="rc-slides" id="rc-slides"></div>
+    <div class="rc-tap"><button data-act="rc-prev" aria-label="Anterior"></button><button data-act="rc-next" aria-label="Siguiente"></button></div>
+  </section>
+
+  <section class="screen" id="rate" aria-label="Valoración">
+    <div class="steps"><button class="back" data-act="rate-back"><svg class="i"><use href="#i-back"/></svg>Atrás</button><span class="count">Tu opinión</span><button class="skip" data-act="rate-skip">Ahora no</button></div>
+    <div class="rate-scroll">
+      <div class="q-ico"><svg class="i"><use href="#i-star"/></svg></div>
+      <h2>¿Qué te ha parecido la visita?</h2>
+      <p class="rate-sub">Del 1 al 10</p>
+      <div class="score" id="score"></div>
+      <div class="score-l"><span>1 · Nada</span><span>10 · Muchísimo</span></div>
+      <div class="sec">¿Qué mejorarías?</div>
+      <div class="chips" id="improve"></div>
+      <label class="field area"><textarea id="rate-text" rows="3" placeholder="Cuéntanos algo más (opcional)"></textarea></label>
+    </div>
+    <div class="sv-foot"><button class="btn primary wide" id="rate-send" data-act="rate-send" disabled>Enviar</button></div>
+  </section>
+
+  <section class="screen thanks" id="thanks" aria-label="Gracias">
+    <div class="th-in">
+      <div class="th-check"><svg class="i"><use href="#i-check"/></svg></div>
+      <h1>Gracias por tu visita</h1>
+      <p>Tu valoración ayuda a la basílica a mejorar la audioguía.</p>
+      <div class="th-btns"><button class="btn primary wide" data-act="recap-open"><svg class="i"><use href="#i-share"/></svg>Ver y compartir tu resumen</button><button class="btn text" data-act="home">Volver al inicio</button></div>
+    </div>
+    <div class="made-by dark">Con tecnología <svg class="og"><use href="#og-mark"/></svg><b>OptimaGuía</b></div>
+  </section>
+
+  <!-- ========== De sala a sala (automática y por voz) ========== -->
+  <div class="walk" id="walk" aria-live="assertive">
+    <div class="wk-card">
+      <span class="wk-k" id="wk-k">Siguiente espacio</span>
+      <h2 id="wk-name">La sacristía</h2>
+      <div class="wk-arrow" id="wk-arrow"><svg class="i"><use href="#i-arrow"/></svg></div>
+      <p id="wk-text"></p>
+      <div class="wk-meta"><span class="pulse"></span><span id="wk-meta">≈ 40 m · te avisaremos al llegar</span></div>
+      <div class="wk-btns"><button class="btn primary" data-act="arrive">Ya estoy aquí</button><button class="btn text" data-act="walk-map">Ver en el plano</button></div>
+      <small class="wk-demo">Ubicación simulada en el prototipo: llegas solo en unos segundos.</small>
+    </div>
+  </div>
 
   <!-- ========== Mini reproductor ========== -->
   <div class="mini" id="mini" role="button" tabindex="0" aria-label="Abrir el reproductor">
@@ -319,39 +390,59 @@
   <!-- ========== Hojas ========== -->
   <div class="scrim" id="scrim" data-act="close-sheet"></div>
 
-  <div class="sheet termcard" id="sh-term" role="dialog" aria-modal="true" aria-label="Ficha">
-    <div class="tc-photo" data-grab><div class="tc-ph"></div><div class="grab light"></div><button class="tc-x" data-act="close-sheet" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button><div class="dots" id="tc-dots"></div></div>
+  <div class="sheet termcard" id="sh-term" role="dialog" aria-modal="true" aria-label="Ficha de la obra">
+    <div class="tc-view" data-grab>
+      <canvas id="tc-3d"></canvas>
+      <div class="tc-ph"></div>
+      <div class="grab light"></div>
+      <div class="tc-seg segm dark" id="tc-seg"><span class="ind"></span><button data-v="3d"><svg class="i"><use href="#i-cube"/></svg>3D</button><button data-v="foto"><svg class="i"><use href="#i-image"/></svg>Foto</button></div>
+      <button class="tc-x" data-act="close-sheet" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button>
+      <div class="tc-tools" id="tc-tools"><button data-act="v-spin" aria-label="Girar 360°"><svg class="i"><use href="#i-rotate"/></svg>360°</button><button data-act="v-in" aria-label="Acercar"><svg class="i"><use href="#i-plus"/></svg></button><button data-act="v-out" aria-label="Alejar"><svg class="i"><use href="#i-minus"/></svg></button></div>
+      <span class="tc-hint" id="tc-hint">Arrastra para girar<br>Pellizca para acercar</span>
+      <span class="tc-prov">Modelo provisional</span>
+      <div class="dots" id="tc-dots"></div>
+    </div>
     <div class="tc-body">
-      <div class="over" id="tc-over">Objeto · Sacristía</div>
-      <div class="title"><h2 id="tc-name">Mesa calicera</h2><button class="ib listen" id="tc-listen" data-act="tc-listen" aria-label="Escuchar"><svg class="i"><use href="#i-speaker"/></svg></button></div>
+      <div class="over" id="tc-over">Obra · Sacristía</div>
+      <div class="title"><h2 id="tc-name">Mesa calicera</h2></div>
       <p class="cartela" id="tc-cartela"></p>
+      <div class="detail" id="tc-detail">
+        <button class="dt-play" id="dt-play" data-act="dt-toggle" aria-label="Escuchar la pista ampliada"><svg class="i fill ic-play"><use href="#i-play"/></svg><svg class="i fill ic-pause"><use href="#i-pause"/></svg></button>
+        <div class="dt-t"><b>Pista ampliada</b><small id="dt-sub">0:20 · más sobre esta obra</small><span class="dt-line"><i id="dt-prog"></i></span></div>
+      </div>
+      <div class="dt-choice" id="dt-choice" hidden>
+        <p><svg class="i"><use href="#i-headph"/></svg>La pista de la sala sigue sonando. ¿Cuándo quieres escuchar esta?</p>
+        <div class="btns"><button class="btn second" data-act="dt-later"><svg class="i"><use href="#i-queue"/></svg>Al terminar</button><button class="btn primary" data-act="dt-now"><svg class="i fill"><use href="#i-play"/></svg>Ahora</button></div>
+        <small>«Ahora» pausa la pista de la sala y la retoma al acabar.</small>
+      </div>
       <p class="def" id="tc-def"></p>
-      <div class="btns"><button class="btn primary" data-act="tc-ar"><svg class="i"><use href="#i-ar"/></svg>Verla en RA</button><button class="btn second" data-act="tc-ask"><svg class="i"><use href="#i-chat"/></svg>Preguntar</button></div>
+      <div class="btns"><button class="btn second" data-act="tc-ar"><svg class="i"><use href="#i-camera"/></svg>Verla en la sala</button><button class="btn second" data-act="tc-ask"><svg class="i"><use href="#i-chat"/></svg>Preguntar</button></div>
     </div>
   </div>
 
-  <div class="sheet assist" id="sh-assist" role="dialog" aria-modal="true" aria-label="Pregunta al guía">
-    <div class="grab" data-grab></div>
-    <div class="np" data-grab>
-      <div><b id="as-stop">La sacristía</b><small id="as-paused">En pausa en 1:12</small></div>
-      <button class="resume" data-act="as-resume"><svg class="i fill"><use href="#i-play"/></svg>Seguir</button>
+  <div class="sheet guide" id="sh-guide" role="dialog" aria-modal="true" aria-label="Habla con tu guía">
+    <div class="gd-head" data-grab>
+      <div class="grab"></div>
+      <div class="gd-av" id="gd-av"><canvas id="gd-portrait"></canvas><div class="orb" id="gd-orb"><i></i><i></i><i></i><i></i><i></i></div></div>
+      <div class="gd-t"><b id="gd-name">San Juan de Dios</b><small id="gd-status">La escultura de su capilla, animada</small></div>
       <button class="ib" data-act="close-sheet" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button>
     </div>
     <div class="chat" id="as-chat">
-      <div class="scope"><svg class="i"><use href="#i-info"/></svg>Responde solo sobre la basílica y tu visita.</div>
+      <div class="scope"><svg class="i"><use href="#i-lock"/></svg>Responde solo con las fuentes verificadas por la basílica.</div>
       <div id="as-log"></div>
       <div class="more-label" id="as-more">Puedes preguntar</div>
       <div class="sugg" id="as-sugg"></div>
     </div>
     <form class="compose" id="as-form">
       <label class="field"><input id="as-input" type="text" placeholder="Escribe tu pregunta" autocomplete="off" enterkeyhint="send"></label>
-      <button type="button" class="talkbtn" id="as-mic" data-act="as-mic" aria-label="Preguntar con la voz"><svg class="i ic-mic"><use href="#i-mic"/></svg><svg class="i ic-send"><use href="#i-send"/></svg><i class="sq"></i></button>
+      <button type="submit" class="talkbtn" id="as-send" aria-label="Enviar"><svg class="i"><use href="#i-send"/></svg></button>
     </form>
+    <div class="compose voice-on" id="as-voice"><span class="wave" id="as-wave"><i></i><i></i><i></i><i></i><i></i></span><span class="t" id="as-voice-t">Micrófono abierto: habla cuando quieras</span></div>
   </div>
 
-  <div class="sheet list" id="sh-stops" role="dialog" aria-modal="true" aria-label="Las paradas">
+  <div class="sheet list" id="sh-stops" role="dialog" aria-modal="true" aria-label="Los espacios">
     <div class="grab" data-grab></div>
-    <div class="sh-head" data-grab><h2>Las paradas</h2><button class="ib" data-act="close-sheet" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <div class="sh-head" data-grab><h2>Los espacios</h2><button class="ib" data-act="close-sheet" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></div>
     <div class="sh-sub" id="stops-sub"></div>
     <div class="sh-scroll" id="stops-list"></div>
   </div>
@@ -360,10 +451,10 @@
     <div class="grab" data-grab></div>
     <div class="sh-head" data-grab><h2>Idioma</h2><button class="ib" data-act="close-sheet" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></div>
     <div class="sh-scroll" id="lang-list"></div>
-    <button class="row more" data-act="settings"><svg class="i lead"><use href="#i-sliders"/></svg><span class="t">Texto, voz y accesibilidad</span><svg class="i chev"><use href="#i-chev"/></svg></button>
+    <button class="row more" data-act="settings"><svg class="i lead"><use href="#i-sliders"/></svg><span class="t">Texto, voz, música y accesibilidad</span><svg class="i chev"><use href="#i-chev"/></svg></button>
   </div>
 
-  <div class="sheet perm" id="sh-perm" role="dialog" aria-modal="true" aria-label="Permiso de cámara">
+  <div class="sheet perm" id="sh-perm" role="dialog" aria-modal="true" aria-label="Permisos">
     <div class="pv" data-grab>
       <img src="assets/img/sjd-1.jpg" alt="" id="pv-img">
       <div class="grab light"></div>
@@ -372,22 +463,26 @@
       <div class="pv-mk" style="left: 12%; top: 30%"><span class="ring"></span><span class="lbl" id="pv-l2">Espejos</span></div>
     </div>
     <div class="pbody">
-      <div class="over">Realidad aumentada</div>
-      <h2>¿Podemos usar la cámara?</h2>
-      <p class="why">Para mostrar los puntos sobre la sala y al guía en 3D.</p>
-      <div class="rows">
-        <div class="row"><svg class="i lead"><use href="#i-lock"/></svg><span class="t">No se graba ni se guarda nada.</span></div>
-        <div class="row"><svg class="i lead"><use href="#i-off"/></svg><span class="t">Se apaga al volver a la audioguía.</span></div>
-      </div>
-      <div class="btns"><button class="btn primary wide" data-act="perm-ok">Permitir la cámara</button><button class="btn text" data-act="close-sheet">Ahora no, seguir con el audio</button></div>
+      <div class="over" id="perm-over">Realidad aumentada</div>
+      <h2 id="perm-title">¿Podemos usar la cámara?</h2>
+      <p class="why" id="perm-why">Para mostrar los puntos sobre la sala y las obras en 3D.</p>
+      <div class="rows" id="perm-rows"></div>
+      <div class="btns"><button class="btn primary wide" data-act="perm-ok" id="perm-ok">Permitir</button><button class="btn text" data-act="perm-no" id="perm-no">Ahora no, seguir con el audio</button></div>
     </div>
+  </div>
+
+  <div class="sheet photos-sh" id="sh-photos" role="dialog" aria-modal="true" aria-label="Tus fotos">
+    <div class="grab" data-grab></div>
+    <div class="sh-head" data-grab><h2>Tus fotos</h2><button class="ib" data-act="close-sheet" aria-label="Cerrar"><svg class="i"><use href="#i-x"/></svg></button></div>
+    <div class="sh-sub">Aparecerán en el resumen de tu visita, listas para compartir.</div>
+    <div class="ph-grid" id="ph-grid"></div>
   </div>
 
   <!-- ========== Tutorial ========== -->
   <div class="tut" id="tut" aria-live="polite">
     <div class="spot" id="tut-spot"></div>
     <div class="tip" id="tut-tip" role="dialog" aria-label="Tutorial">
-      <div class="over" id="tut-k">Tutorial · 1 de 4</div>
+      <div class="over" id="tut-k">Cómo funciona · 1 de 4</div>
       <b id="tut-title"></b>
       <p id="tut-text"></p>
       <div class="row2"><button class="btn text" data-act="tut-skip">Saltar</button><button class="btn primary" id="tut-next" data-act="tut-next">Siguiente</button></div>

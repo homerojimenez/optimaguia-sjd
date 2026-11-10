@@ -95,9 +95,9 @@ export function speakQueue({ rate = 1, onWord, onDone, onError } = {}) {
 }
 
 // Pregunta al guía (Claude). El texto llega poco a poco; se avisa por cada frase completa.
-export async function ask(question, { stop: stopId, kids, ar, previous = [], onText, onSentence, signal } = {}) {
+export async function ask(question, { stop: stopId, route, ar, previous = [], onText, onSentence, signal } = {}) {
   if (!API) throw new Error('sin servidor');
-  const r = await fetch(`${API}/sjd/ask`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, stop: stopId, kids, ar, previous }), signal });
+  const r = await fetch(`${API}/sjd/ask`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, stop: stopId, route, ar, previous }), signal });
   if (!r.ok || !r.body) throw new Error(`ask ${r.status}`);
   const reader = r.body.getReader(); const dec = new TextDecoder();
   let full = ''; let sent = 0;
