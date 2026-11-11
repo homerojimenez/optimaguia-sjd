@@ -1,9 +1,9 @@
 // OptimaGuía · prototipo funcional v5 · Basílica de San Juan de Dios
-import { STOPS, TERMS, SURVEY, LANGS, KB, FALLBACK, ROUTES, PORTALS } from './data.js?v=5';
-import { Narrator } from './narrator.js?v=5';
-import { LOGO_SYMBOLS } from './logos.js?v=5';
-import * as cloud from './cloud.js?v=5';
-import { music } from './music.js?v=5';
+import { STOPS, TERMS, SURVEY, LANGS, KB, FALLBACK, ROUTES, PORTALS } from './data.js?v=6';
+import { Narrator } from './narrator.js?v=6';
+import { LOGO_SYMBOLS } from './logos.js?v=6';
+import * as cloud from './cloud.js?v=6';
+import { music } from './music.js?v=6';
 
 gsap.registerPlugin(CustomEase, SplitText, Draggable, InertiaPlugin, ScrollTrigger, ScrollToPlugin);
 CustomEase.create('ios', '0.32,0.72,0,1');
@@ -664,7 +664,7 @@ function bindSheetDrag(sh) {
 // Ficha de la obra: 3D, foto y pista ampliada. La pista de la sala sigue sonando.
 // ---------------------------------------------------------------------------
 let termCur = null; let viewer = null; let viewerMod = null; let termList = [];
-const loadViewer = () => (viewerMod ||= import('./viewer3d.js?v=5'));
+const loadViewer = () => (viewerMod ||= import('./viewer3d.js?v=6'));
 function askFor(t) {
   if (t.kind === 'Escultura' || t.kind === 'Persona') return `¿Quién fue ${t.name}?`;
   const w = t.name.split(' ')[0].toLowerCase(); const plural = /s$/.test(w);
@@ -1054,7 +1054,7 @@ function permNo() {
 // Realidad aumentada: puntos, obras en 3D, portales y fotos
 // ---------------------------------------------------------------------------
 let arMod = null; let ar = null; let arReady = false; let arFrom = 'player'; let scanLoops = []; let arFocus = null;
-const loadAR = () => (arMod ||= import('./ar.js?v=5'));
+const loadAR = () => (arMod ||= import('./ar.js?v=6'));
 function openAR(focus) { ensureStop(); arFocus = focus || null; if (!state.camAsked) { openPerm(['camera'], () => enterAR({ autoplay: false })); return; } enterAR({ autoplay: false }); }
 async function enterAR({ autoplay = false } = {}) {
   let m; try { m = await loadAR(); } catch (e) { toast('No se ha podido cargar la realidad aumentada'); return; }
