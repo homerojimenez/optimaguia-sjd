@@ -2,7 +2,7 @@
 // La voz es la síntesis del propio móvil (speechSynthesis), frase a frase, como sustituta
 // de la locución grabada. Si no hay voz, el reloj avanza solo con duraciones estimadas.
 
-import * as cloud from './cloud.js?v=6';
+import * as cloud from './cloud.js?v=7';
 
 const TERM_RE = /\[([^\]]+)\]\(([^)]+)\)/g;
 

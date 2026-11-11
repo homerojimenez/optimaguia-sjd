@@ -392,18 +392,24 @@ export const LANGS = [
 export const SURVEY = [
   { key: 'lang', icon: 'i-globe', title: '¿En qué idioma?', lang: true },
   { key: 'route', icon: 'i-route', title: '¿Qué visita quieres hacer?', cards: true, options: [
-    { v: 'historica', t: 'Histórica', s: ROUTES.historica.desc, k: 'Con San Juan de Dios', photo: PHOTOS.urna },
-    { v: 'arte', t: 'Arte y arquitectura', s: ROUTES.arte.desc, k: 'Con un narrador', photo: PHOTOS.cupula },
+    { v: 'historica', t: 'Histórica', s: 'San Juan de Dios te cuenta su vida y la fe que levantó este templo.', k: 'Con San Juan de Dios', art: 'historica', tags: ['En primera persona', 'Su vida y su obra'] },
+    { v: 'arte', t: 'Arte y arquitectura', s: 'Un narrador te explica lo que ves: bóvedas, retablos y materiales.', k: 'Con un narrador', art: 'arte', tags: ['Narrador', 'Obras y materiales'] },
   ] },
   { key: 'access', icon: 'i-access', title: '¿Adaptamos la visita?', options: [
-    { v: 'none', t: 'No, gracias', icon: 'i-check' },
-    { v: 'visual', t: 'Veo poco o nada', s: 'Te guiamos por voz. Cada pista suena sola al llegar a la sala y te decimos hacia dónde ir.', icon: 'i-ear' },
-    { v: 'auditiva', t: 'Oigo poco o nada', s: 'Todo lo que se dice aparece en pantalla, en grande.', icon: 'i-text' },
+    { v: 'none', t: 'Sin adaptaciones', icon: 'i-check' },
+    { v: 'visual', t: 'Adaptar la visita para personas con discapacidad visual', s: 'La visita avanza sola en cada sala y te indica el camino por voz. Preguntas hablando, sin tocar la pantalla.', icon: 'i-ear' },
+    { v: 'auditiva', t: 'Adaptar la visita para personas con discapacidad auditiva', s: 'Primero el texto, en grande, y subtítulos siempre activos, también sobre la cámara.', icon: 'i-text' },
   ] },
-  { key: 'mode', icon: 'i-ar', title: '¿Cómo quieres recorrerla?', skipIf: (st) => st.access === 'visual', options: [
-    { v: 'ar', t: 'Con realidad aumentada', s: 'Tocas los puntos de cada sala para ver las obras en 3D.', icon: 'i-ar', badge: 'Recomendada' },
-    { v: 'auto', t: 'Automática', s: 'La pista y la realidad aumentada se activan solas al entrar en cada sala. Preguntas con la voz.', icon: 'i-auto', badge: 'Sin tocar nada' },
-    { v: 'audio', t: 'Solo audio y texto', s: 'Sin cámara. Escuchas y lees cada sala.', icon: 'i-headph' },
+  // Dos decisiones en una pantalla: qué ves (con o sin RA) y cómo avanza (sola al llegar o a tu ritmo)
+  { key: 'mode', icon: 'i-ar', title: '¿Cómo quieres recorrerla?', skipIf: (st) => st.access === 'visual', groups: [
+    { key: 'ar', label: 'Qué ves', options: [
+      { v: 'si', t: 'Con realidad aumentada', s: 'Puntos y obras en 3D sobre la sala, con la cámara.', icon: 'i-ar', badge: 'Recomendada' },
+      { v: 'no', t: 'Solo audio y texto', s: 'Sin cámara: escuchas y lees cada sala.', icon: 'i-headph' },
+    ] },
+    { key: 'advance', label: 'Cómo avanza', options: [
+      { v: 'auto', t: 'Automática', s: 'Cada sala empieza sola al llegar.', icon: 'i-auto' },
+      { v: 'manual', t: 'A tu ritmo', s: 'Tú eliges cuándo empieza cada sala.', icon: 'i-play' },
+    ] },
   ] },
 ];
 

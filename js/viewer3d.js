@@ -162,8 +162,9 @@ export class ObjectViewer {
 
 // ---------- Retrato animado del guía (escultura de San Juan de Dios) ----------
 export class Portrait {
-  constructor(canvas) {
-    this.canvas = canvas;
+  // Busto de San Juan de Dios: cabeza y hombros, con la mandíbula al ritmo de la voz.
+  constructor(canvas, { bust = false } = {}) {
+    this.canvas = canvas; this.bust = bust;
     const r = this.r = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
     r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.12;
@@ -172,16 +173,29 @@ export class Portrait {
     this.scene.add(new THREE.HemisphereLight(0xfff1dc, 0x2b211b, 0.8));
     const key = new THREE.DirectionalLight(0xffe7c9, 2); key.position.set(-1.5, 2.5, 2); this.scene.add(key);
     const rim = new THREE.DirectionalLight(0xc9dcff, 1); rim.position.set(1.5, 2, -2); this.scene.add(rim);
-    this.cam = new THREE.PerspectiveCamera(28, 1, 0.05, 20); this.cam.position.set(0, 1.58, 1.35); this.cam.lookAt(0, 1.5, 0);
+    this.cam = new THREE.PerspectiveCamera(bust ? 26 : 28, 1, 0.02, 20); this.cam.position.set(0, 1.58, 1.35); this.cam.lookAt(0, 1.5, 0);
     this.clock = new THREE.Clock(); this.running = false; this._loop = this._loop.bind(this);
+    this.talking = false; this.open = 0; this.headPos = new THREE.Vector3(0, 1.63, 0);
     this.ready = loadFray().then((g) => {
       const m = g.scene; this.scene.add(m); m.traverse((o) => { if (o.isMesh) o.frustumCulled = false; });
       this.mixer = new THREE.AnimationMixer(m); this.acts = {}; g.animations.forEach((a) => { this.acts[a.name] = this.mixer.clipAction(a); });
-      this.set('idle', 0);
+      m.updateMatrixWorld(true);
+      m.traverse((o) => { if (o.name === 'jaw') this.jaw = o; if (o.name === 'head') this.head = o; });
+      if (this.jaw) this.jawRest = this.jaw.rotation.x;
+      if (this.head) this.head.getWorldPosition(this.headPos);
+      this.set('idle', 0); this.resize();
     });
     new ResizeObserver(() => this.resize()).observe(canvas);
   }
-  resize() { const w = this.canvas.clientWidth, h = this.canvas.clientHeight; if (!w || !h) return; this.r.setSize(w, h, false); this.cam.aspect = w / h; this.cam.updateProjectionMatrix(); }
+  resize() {
+    const w = this.canvas.clientWidth, h = this.canvas.clientHeight; if (!w || !h) return;
+    this.r.setSize(w, h, false); this.cam.aspect = w / h;
+    if (this.bust) { // encuadre de busto: unos 52 cm de alto, la cabeza en el tercio superior
+      const hp = this.headPos; const dist = 0.26 / Math.tan(THREE.MathUtils.degToRad(this.cam.fov / 2));
+      this.cam.position.set(hp.x, hp.y + 0.02, hp.z + dist); this.cam.lookAt(hp.x, hp.y - 0.1, hp.z);
+    }
+    this.cam.updateProjectionMatrix();
+  }
   set(state, fade = 0.35) {
     if (!this.acts) return;
     const name = state === 'talk' ? 'Talk' : state === 'listen' ? 'Listen' : state === 'greet' ? 'Greet' : 'Idle';
@@ -189,7 +203,21 @@ export class Portrait {
     if (name === 'Greet') { next.setLoop(THREE.LoopOnce, 1); next.clampWhenFinished = true; }
     next.reset().fadeIn(fade).play(); if (this.cur) this.cur.fadeOut(fade); this.cur = next;
   }
+  talk(on) { this.talking = !!on; }
+  // Apertura de la boca: sílabas de unos 5 por segundo, con pausas entre frases (en radianes, 0 a 0,18)
+  _mouth(t) {
+    if (!this.talking) return 0;
+    const syl = 0.5 + 0.5 * Math.sin(t * Math.PI * 2 * 4.8 + 0.8 * Math.sin(t * 2.1));
+    const phrase = Math.max(0, Math.sin(t * Math.PI * 2 * 0.42) + 0.55) / 1.55;
+    return 0.18 * syl * Math.min(1, phrase * 1.4) * (0.75 + 0.25 * Math.sin(t * 7.3));
+  }
   start() { if (this.running) return; this.running = true; this.resize(); this.clock.start(); requestAnimationFrame(this._loop); }
   stop() { this.running = false; }
-  _loop() { if (!this.running) return; requestAnimationFrame(this._loop); const dt = Math.min(this.clock.getDelta(), 0.1); this.mixer && this.mixer.update(dt); this.r.render(this.scene, this.cam); }
+  _loop() {
+    if (!this.running) return; requestAnimationFrame(this._loop);
+    const dt = Math.min(this.clock.getDelta(), 0.1); this.mixer && this.mixer.update(dt);
+    if (this.jaw) { const target = this._mouth(this.clock.elapsedTime); this.open += (target - this.open) * Math.min(1, dt * 22); this.jaw.rotation.x = this.jawRest + this.open; }
+    this.r.render(this.scene, this.cam);
+  }
 }
+

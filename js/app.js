@@ -1,9 +1,9 @@
 // OptimaGuía · prototipo funcional v5 · Basílica de San Juan de Dios
-import { STOPS, TERMS, SURVEY, LANGS, KB, FALLBACK, ROUTES, PORTALS } from './data.js?v=6';
-import { Narrator } from './narrator.js?v=6';
-import { LOGO_SYMBOLS } from './logos.js?v=6';
-import * as cloud from './cloud.js?v=6';
-import { music } from './music.js?v=6';
+import { STOPS, TERMS, SURVEY, LANGS, KB, FALLBACK, ROUTES, PORTALS } from './data.js?v=7';
+import { Narrator } from './narrator.js?v=7';
+import { LOGO_SYMBOLS } from './logos.js?v=7';
+import * as cloud from './cloud.js?v=7';
+import { music } from './music.js?v=7';
 
 gsap.registerPlugin(CustomEase, SplitText, Draggable, InertiaPlugin, ScrollTrigger, ScrollToPlugin);
 CustomEase.create('ios', '0.32,0.72,0,1');
@@ -28,11 +28,11 @@ const prefersReduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const detectLang = () => { const l = (navigator.language || 'es').slice(0, 2).toUpperCase(); return LANGS.some((x) => x.code === l) ? l : 'ES'; };
 
 const state = {
-  lang: store.get('lang', 'ES'), route: store.get('route', null), access: store.get('access', null), mode: store.get('mode', null),
+  lang: store.get('lang', 'ES'), route: store.get('route', null), access: store.get('access', null), ar: store.get('ar', null), advance: store.get('advance', null),
   textSize: store.get('textSize', 'grande'), speed: store.get('speed', 1), theme: store.get('theme', 'auto'),
   voice: store.get('voice', true), music: store.get('music', true), musicLevel: store.get('musicLevel', 1),
-  subs: store.get('subs', true), bigText: store.get('bigText', false), contrast: store.get('contrast', false), reduce: store.get('reduce', prefersReduce),
-  stopId: null, visited: new Set(), camAsked: false, permsAsked: false,
+  subs: store.get('subs', false), bigText: store.get('bigText', false), contrast: store.get('contrast', false), reduce: store.get('reduce', prefersReduce),
+  pview: store.get('pview', null), stopId: null, visited: new Set(), camAsked: false, permsAsked: false,
   photos: [], opened: new Set(), asked: [], startedAt: null, stopSecs: {}, rating: null,
 };
 const CAPTURE = new URLSearchParams(location.search).has('captura'); // capturas para desarrollo: RA con la foto de la sala
@@ -45,9 +45,13 @@ const nextStop = (s = curStop()) => STOPS[STOPS.findIndex((x) => x.id === s.id) 
 const lower1 = (s) => s.charAt(0).toLowerCase() + s.slice(1);
 const floorTxt = (f) => `Planta ${f}`;
 const isBlind = () => state.access === 'visual';
-const isAuto = () => isBlind() || state.mode === 'auto';
-const usesAR = () => !isBlind() && (state.mode === 'ar' || state.mode === 'auto');
-const voiceAsk = () => isAuto(); // modos sin pantalla: se pregunta con la voz, micrófono abierto
+const isDeaf = () => state.access === 'auditiva';
+const isAuto = () => isBlind() || state.advance === 'auto'; // cada sala empieza sola al llegar
+const usesAR = () => !isBlind() && state.ar !== 'no';
+const voiceAsk = () => isBlind(); // sin pantalla: la visita es autónoma y se pregunta con la voz, micrófono abierto
+const subsOn = () => isDeaf() || state.subs; // subtítulos: siempre con discapacidad auditiva; si no, apagados hasta que se activen
+const pview = () => state.pview || (isDeaf() ? 'texto' : 'imagen'); // con discapacidad auditiva, primero el texto
+const modeLabel = () => (isBlind() ? 'Automática, guiada por voz' : `${usesAR() ? 'Con realidad aumentada' : 'Solo audio y texto'} · ${isAuto() ? 'automática' : 'a tu ritmo'}`);
 const info = (id) => (PORTALS[id] ? { label: PORTALS[id].label, portal: true } : { label: TERMS[id]?.name || id });
 
 // Pista de la sala y pista ampliada: dos motores, una sola voz a la vez.
@@ -99,7 +103,7 @@ const ACT = {
   start: () => { unlockAll(); showStep(0, 1, true); go('survey'); },
   lang: () => openLang(),
   'survey-back': () => { const seq = steps(); const i = seq.indexOf(svStep); if (i <= 0) go(svFrom === 'home' ? 'home' : 'cover', { dir: 'pop' }); else showStep(seq[i - 1], -1); },
-  'survey-skip': () => { state.route ||= 'historica'; state.access ||= 'none'; state.mode ||= 'ar'; saveProfile(); showStep('summary', 1); },
+  'survey-skip': () => { state.route ||= 'historica'; state.access ||= 'none'; state.ar ||= 'si'; state.advance ||= 'manual'; saveProfile(); showStep('summary', 1); },
   'survey-next': () => { const seq = steps(); const i = seq.indexOf(svStep); if (svStep === 'summary') beginVisit(); else showStep(seq[i + 1], 1); },
   'sv-home': () => { saveProfile(); go('home', { dir: 'push' }); },
   'home-go': () => { unlockAll(); if (!narrator.started) beginVisit(); else if (isBlind()) go('voice', { dir: 'up' }); else { go('player', { dir: 'up' }); if (!narrator.playing && !detail.playing) playMain(); } },
@@ -119,7 +123,7 @@ const ACT = {
   fwd15: (el) => { narrator.skip(15); spin(el, 1); },
   next: () => { const n = nextStop(); if (!n) { openRecap(); return; } if (isAuto()) startWalk(n); else playStop(n.id, { open: false }); },
   speed: (el) => { const seq = [1, 1.25, 1.5, 0.75]; setSpeed(seq[(seq.indexOf(state.speed) + 1) % seq.length]); gsap.fromTo(el, { scale: 0.7 }, { scale: 1, duration: 0.5, ease: 'back.out(3)' }); },
-  'photo-term': () => { const f = narrator.chapterAt()?.focus; if (!f) return; if (PORTALS[f]) openAR(f); else openTerm(f); },
+  'photo-term': () => { if ($('#p-photo')._swiped) { $('#p-photo')._swiped = false; return; } const f = narrator.chapterAt()?.focus; if (!f) return; if (PORTALS[f]) openAR(f); else openTerm(f); },
   ar: () => openAR(narrator.chapterAt()?.focus),
   'back-now': () => { userScrollAt = 0; followNow(true); },
   unqueue: () => { if (dt.item && detail.playing) { stopDetail(true); } else { dt.queued = null; } renderQueue(); },
@@ -146,11 +150,10 @@ const ACT = {
   'vc-repeat': () => { narrator.seekSentence(narrator.idx); if (!narrator.playing) playMain(); },
   arrive: () => arrive(),
   'walk-map': () => { hideWalk(false); go('map', { dir: 'push' }); },
-  'recap-close': () => { stopStory(); go(narrator.started ? 'home' : 'cover', { dir: 'down' }); },
-  'rc-prev': () => storyGo(storyI - 1),
-  'rc-next': () => storyGo(storyI + 1),
-  'recap-open': () => openRecap(),
-  'to-rate': () => { stopStory(); go('rate', { dir: 'push' }); },
+  'recap-close': () => go(narrator.started ? 'home' : 'cover', { dir: 'down' }),
+  'to-rate': () => go('rate', { dir: 'push' }),
+  restart: () => { if (narrator.playing) narrator.pause(); if (detail.playing) detail.pause(); go('cover', { dir: 'fade' }); },
+  cc: () => { if (isDeaf()) { toast('Con la adaptación para discapacidad auditiva, los subtítulos van siempre activos', 'i-cc'); return; } state.subs = !state.subs; store.set('subs', state.subs); applyPrefs(); syncToggles(); toast(state.subs ? 'Subtítulos activados' : 'Subtítulos desactivados', 'i-cc'); },
   'rate-back': () => go('recap', { dir: 'pop' }),
   'rate-skip': () => go('thanks', { dir: 'push' }),
   'rate-send': () => sendRating(),
@@ -171,7 +174,7 @@ $('#mini').addEventListener('click', (e) => { if (e.target.closest('[data-act]')
 function unlockAll() { narrator.unlock(); music.unlock(); }
 
 function bindPress() {
-  const SEL = '.btn, .ib, .glyph, .play, .tile, .ar-chip, .ask, .askbar, .mini-pp, .pp, .ardock .d, .shutter, .talkbtn, .center, .tc-x, .stoprow, .rail-card, .logo, .sname, .fchips button, .zoom button, .sugg button, .mini, .optcard, .pill, .fab, .finish, .score button, .chips button, .dt-play, .tc-tools button, .vc-play, .vc-row button, .share-row button';
+  const SEL = '.btn, .ib, .glyph, .play, .hm-link, .cc, .floors button, .ar-chip, .ask, .askbar, .mini-pp, .pp, .ardock .d, .shutter, .talkbtn, .center, .tc-x, .stoprow, .rail-card, .logo, .sname, .zoom button, .sugg button, .mini, .optcard, .pill, .fab, .finish, .score button, .chips button, .dt-play, .tc-tools button, .vc-play, .vc-row button, .share-row button';
   let el = null;
   document.addEventListener('pointerdown', (e) => { el = e.target.closest(SEL); if (!el || state.reduce) return; gsap.to(el, { scale: el.matches('.mini, .optcard, .rail-card, .hm-hero') ? 0.98 : 0.95, duration: 0.14, ease: 'power2.out', overwrite: 'auto' }); });
   const up = () => { if (!el) return; gsap.to(el, { scale: 1, duration: 0.55, ease: 'elastic.out(1, 0.5)', overwrite: 'auto' }); el = null; };
@@ -190,17 +193,18 @@ function applyPrefs() {
   r.toggleAttribute('data-bigtext', false); if (state.bigText || state.access === 'auditiva') r.setAttribute('data-bigtext', 'on');
   r.classList.toggle('reduce', state.reduce);
   const app = $('#app'); app.classList.toggle('route-arte', state.route === 'arte'); app.classList.toggle('route-historica', state.route !== 'arte');
-  $('#ar').classList.toggle('no-subs', !state.subs && state.access !== 'auditiva');
+  $('#ar').classList.toggle('no-subs', !subsOn()); $('#p-stage').classList.toggle('subs-on', subsOn());
+  $$('[data-act="cc"]').forEach((b) => { b.setAttribute('aria-pressed', String(subsOn())); b.classList.toggle('on', subsOn()); });
   $$('.lang-code').forEach((el) => { el.textContent = state.lang; });
   const L = LANGS.find((l) => l.code === state.lang) || LANGS[0];
   $$('.lang-name').forEach((el) => { el.textContent = L.name; });
   $('#speed').textContent = speedLabel(state.speed);
   music.setEnabled(state.music); music.setLevel(state.musicLevel); music.setRoute(state.route || 'historica');
   const rt = RT();
-  $('#p-ask').textContent = rt.ask; $('#hm-ask-t').textContent = rt.ask;
+  $('#p-ask').textContent = rt.ask;
   $('#p-narra').innerHTML = `<span class="av-s"></span><span>Narra <b>${esc(rt.who)}</b>${state.route === 'arte' ? '' : ', en primera persona'}</span>`;
   $('#subs-who').textContent = rt.who;
-  $('#hm-guide-t').textContent = rt.who; $('#hm-guide-s').textContent = state.route === 'arte' ? 'Tu guía en la app: pregúntale' : 'La escultura cobra vida y te responde';
+  setPView(pview(), { persist: false });
 }
 const speedLabel = (v) => `${String(v).replace('.', ',')}×`;
 function setSpeed(v) { state.speed = v; store.set('speed', v); narrator.setRate(v); detail.setRate(v); $('#speed').textContent = speedLabel(v); syncSegm('speed', String(v)); }
@@ -255,13 +259,20 @@ async function intro() {
 // ---------------------------------------------------------------------------
 let svStep = 0; let svFrom = 'cover'; const svSplits = {};
 const steps = () => SURVEY.map((q, i) => (q.skipIf && q.skipIf(state) ? null : i)).filter((i) => i !== null).concat(['summary']);
-function saveProfile() { ['route', 'access', 'mode'].forEach((k) => store.set(k, state[k])); applyPrefs(); }
+function saveProfile() { ['route', 'access', 'ar', 'advance'].forEach((k) => store.set(k, state[k])); applyPrefs(); }
+// Ilustraciones de los dos recorridos: se distinguen de un vistazo, sin leer
+const ROUTE_ART = {
+  historica: `<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M14 118c3-22 22-32 46-32s43 10 46 32"/><path d="M33 82c-5-30 8-56 27-58 19 2 32 28 27 58"/><path d="M45 70c-2-17 5-29 15-29s17 12 15 29c-3 9-27 9-30 0z"/><path d="M52 58h0M68 58h0" stroke-width="5"/><path d="M55 66c3 2 7 2 10 0"/><path d="M60 86v32"/><rect x="80" y="6" width="34" height="24" rx="10"/><path d="M86 30l-4 8 10-8"/><path d="M89 18h0M97 18h0M105 18h0" stroke-width="5"/></svg>`,
+  arte: `<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M8 114h104"/><path d="M60 14v8"/><circle cx="60" cy="10" r="3"/><path d="M53 30h14v-8H53z"/><path d="M36 54c0-14 11-24 24-24s24 10 24 24"/><path d="M30 54h60M28 60h64"/><path d="M34 60v54M86 60v54"/><path d="M44 114V88c0-9 7-16 16-16s16 7 16 16v26"/><path d="M20 114V74h14M100 114V74H86"/><path d="M52 44h0M60 40h0M68 44h0" stroke-width="4"/></svg>`,
+};
 function buildSurvey() {
+  const row = (o) => `<button class="row opt" data-v="${o.v}"><span class="tintbg"></span><span class="oi"><svg class="i"><use href="#${o.icon}"/></svg></span><span class="t">${o.t}${o.badge ? `<span class="badge">${o.badge}</span>` : ''}${o.s ? `<small>${o.s}</small>` : ''}</span><span class="radio"></span></button>`;
   $('#sv-stage').innerHTML = SURVEY.map((q, i) => {
     let body;
     if (q.lang) body = `<div class="rows">${LANGS.map((l) => `<button class="row lang ${l.code === state.lang ? 'on' : ''}" data-v="${l.code}"><span class="tintbg"></span><span class="t">${l.name}<small>${l.code === detectLang() ? 'Idioma de tu móvil' : l.sub}</small></span><span class="radio"></span></button>`).join('')}</div>`;
-    else if (q.cards) body = `<div class="optcards">${q.options.map((o) => `<button class="optcard" data-v="${o.v}"><img src="${o.photo.src}" alt="" style="object-position:${o.photo.pos}"><span class="oc-t"><small>${o.k}</small><b>${o.t}</b><span>${o.s}</span></span><span class="ck"><svg class="i"><use href="#i-check"/></svg></span></button>`).join('')}</div>`;
-    else body = `<div class="rows">${q.options.map((o) => `<button class="row opt" data-v="${o.v}"><span class="tintbg"></span><span class="oi"><svg class="i"><use href="#${o.icon}"/></svg></span><span class="t">${o.t}${o.badge ? `<span class="badge">${o.badge}</span>` : ''}${o.s ? `<small>${o.s}</small>` : ''}</span><span class="radio"></span></button>`).join('')}</div>`;
+    else if (q.cards) body = `<div class="optcards">${q.options.map((o) => `<button class="optcard oc-${o.art}" data-v="${o.v}"><span class="oc-ill">${ROUTE_ART[o.art]}</span><span class="oc-t"><small>${o.k}</small><b>${o.t}</b><span>${o.s}</span></span><span class="oc-tags">${o.tags.map((t) => `<i>${t}</i>`).join('')}</span><span class="ck"><svg class="i"><use href="#i-check"/></svg></span></button>`).join('')}</div>`;
+    else if (q.groups) body = q.groups.map((g) => `<div class="sv-group" data-g="${g.key}"><div class="sv-glabel">${g.label}</div><div class="rows">${g.options.map(row).join('')}</div></div>`).join('');
+    else body = `<div class="rows">${q.options.map(row).join('')}</div>`;
     return `<div class="sv-panel" data-i="${i}" data-key="${q.key}"><div class="q-ico"><svg class="i"><use href="#${q.icon}"/></svg></div><h2>${q.title}</h2>${body}</div>`;
   }).join('') + '<div class="sv-panel summary" data-i="summary"></div>';
   $$('.sv-panel:not(.summary)').forEach((p) => { svSplits[p.dataset.i] = SplitText.create(p.querySelector('h2'), { type: 'words', mask: 'words' }); });
@@ -269,15 +280,17 @@ function buildSurvey() {
     const chg = e.target.closest('[data-step]'); if (chg) { showStep(+chg.dataset.step, -1); return; }
     const row = e.target.closest('.row[data-v], .optcard'); if (!row) return;
     const panel = row.closest('.sv-panel'); const q = SURVEY[+panel.dataset.i]; const v = row.dataset.v;
-    if (q.lang) setLang(v, { silent: true }); else state[q.key] = v;
-    $$('.row, .optcard', panel).forEach((r) => {
+    const grp = row.closest('[data-g]'); const scope = grp || panel; // en las preguntas dobles, cada bloque se elige aparte
+    if (q.lang) setLang(v, { silent: true }); else state[grp ? grp.dataset.g : q.key] = v;
+    if (q.key === 'access') { state.pview = null; store.set('pview', null); }
+    $$('.row, .optcard', scope).forEach((r) => {
       const on = r === row; const was = r.classList.contains('on'); r.classList.toggle('on', on);
       if (on && !was && r.classList.contains('row')) {
         gsap.fromTo(r.querySelector('.tintbg'), { scaleX: 0 }, { scaleX: 1, duration: D(0.5), clearProps: 'transform' });
         gsap.fromTo(r.querySelector('.radio'), { '--r': 0 }, { '--r': 1, duration: D(0.45), ease: 'back.out(3)', onComplete() { r.querySelector('.radio').style.removeProperty('--r'); } });
         r.querySelector('.oi') && gsap.fromTo(r.querySelector('.oi'), { scale: 0.8 }, { scale: 1, duration: 0.5, ease: 'back.out(3)' });
       }
-      if (on && !was && r.classList.contains('optcard')) gsap.fromTo(r.querySelector('.ck'), { scale: 0.6 }, { scale: 1, duration: 0.5, ease: 'back.out(3)' });
+      if (on && !was && r.classList.contains('optcard')) { gsap.fromTo(r.querySelector('.ck'), { scale: 0.6 }, { scale: 1, duration: 0.5, ease: 'back.out(3)' }); if (!state.reduce) gsap.fromTo(r.querySelector('.oc-ill svg'), { scale: 0.85, rotation: -6 }, { scale: 1, rotation: 0, duration: 0.7, ease: 'back.out(2.4)' }); }
     });
     haptic(6); updateNextBtn();
   });
@@ -285,13 +298,13 @@ function buildSurvey() {
 function updateNextBtn() {
   const b = $('#sv-next');
   if (svStep === 'summary') { b.disabled = false; b.textContent = 'Empezar la visita'; return; }
-  const q = SURVEY[svStep]; b.disabled = !q.lang && !state[q.key]; b.textContent = 'Continuar';
+  const q = SURVEY[svStep]; b.disabled = q.lang ? false : q.groups ? q.groups.some((g) => !state[g.key]) : !state[q.key]; b.textContent = 'Continuar';
   if (!b.disabled) gsap.fromTo(b, { scale: 0.97 }, { scale: 1, duration: 0.4, ease: 'back.out(3)' });
 }
 function renderSummary() {
   const rt = RT(); const L = LANGS.find((l) => l.code === state.lang) || LANGS[0];
-  const accessTxt = { none: 'Sin adaptaciones', visual: 'Por voz, sin mirar la pantalla', auditiva: 'Todo en texto, en grande' }[state.access] || 'Sin adaptaciones';
-  const modeTxt = isBlind() ? 'Automática: cada pista suena al llegar' : { ar: 'Con realidad aumentada', auto: 'Automática, con realidad aumentada', audio: 'Solo audio y texto' }[state.mode] || 'Con realidad aumentada';
+  const accessTxt = { none: 'Sin adaptaciones', visual: 'Para personas con discapacidad visual', auditiva: 'Para personas con discapacidad auditiva' }[state.access] || 'Sin adaptaciones';
+  const modeTxt = modeLabel();
   const perms = [usesAR() && 'cámara', isAuto() && 'ubicación', voiceAsk() && 'micrófono'].filter(Boolean);
   const i = (k) => SURVEY.findIndex((q) => q.key === k);
   $('.sv-panel.summary').innerHTML = `<div class="sum-hero"><img src="${rt.photo.src}" alt="" style="object-position:${rt.photo.pos}"><span>${esc(rt.long)}</span></div>
@@ -327,7 +340,11 @@ function showStep(i, dir = 1, instant = false) {
       .fromTo($$('.row, .optcard', next), { y: 18, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: D(0.5), stagger: 0.05 }, 0.14);
   }
   // marca lo ya elegido
-  if (i !== 'summary') { const q = SURVEY[i]; const v = q.lang ? state.lang : state[q.key]; $$('.row[data-v], .optcard', next).forEach((r) => r.classList.toggle('on', r.dataset.v === v)); }
+  if (i !== 'summary') {
+    const q = SURVEY[i];
+    if (q.groups) $$('[data-g]', next).forEach((g) => $$('.row[data-v]', g).forEach((r) => r.classList.toggle('on', r.dataset.v === state[g.dataset.g])));
+    else { const v = q.lang ? state.lang : state[q.key]; $$('.row[data-v], .optcard', next).forEach((r) => r.classList.toggle('on', r.dataset.v === v)); }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -351,17 +368,20 @@ function startFirst() {
 // ---------------------------------------------------------------------------
 // Inicio
 // ---------------------------------------------------------------------------
+const heroKicker = (heard = STOPS.filter((x) => state.visited.has(x.id)).length) => (heard >= STOPS.length ? 'Has recorrido' : narrator.started && narrator.stop ? (narrator.playing ? 'Sonando ahora' : 'Sigue en') : 'Empieza en');
 function renderHome() {
   const rt = RT(); const s = narrator.started && narrator.stop ? narrator.stop : null; const target = s || STOPS[0];
   const heard = STOPS.filter((x) => state.visited.has(x.id)).length;
   $('#hm-route').innerHTML = `<svg class="i"><use href="#i-route"/></svg>${esc(rt.name)} · ${esc(lower1(rt.tagline))}`;
   $('#hm-hero-img').src = target.cover.src; $('#hm-hero-img').style.objectPosition = target.cover.pos;
-  $('#hm-k').textContent = heard >= STOPS.length ? 'Has recorrido' : s ? 'Sigue en' : 'Empieza en';
+  $('#hm-k').textContent = heroKicker(heard);
+  if (renderHome.last && renderHome.last !== target.id && !state.reduce) gsap.fromTo('#hm-hero-img', { scale: 1.14, autoAlpha: 0.35 }, { scale: 1, autoAlpha: 1, duration: 0.9, ease: 'expo.out' });
+  renderHome.last = target.id;
   $('#hm-title').textContent = heard >= STOPS.length ? 'Toda la basílica' : target.name;
   $('#hm-meta').textContent = `${heard} de ${STOPS.length} espacios · ${floorTxt(target.floor)}`;
   gsap.to('#hm-prog', { scaleX: heard / STOPS.length, duration: D(0.8) });
   const chips = [];
-  if (isBlind()) chips.push(['i-mic', 'Por voz']); else if (state.mode === 'auto') chips.push(['i-auto', 'Automática']);
+  if (isBlind()) chips.push(['i-mic', 'Por voz']); else if (isAuto()) chips.push(['i-auto', 'Automática']);
   if (usesAR()) chips.push(['i-ar', 'Realidad aumentada']); else if (!isBlind()) chips.push(['i-headph', 'Solo audio']);
   if (state.access === 'auditiva') chips.push(['i-text', 'Texto en grande']);
   chips.push(['i-globe', (LANGS.find((l) => l.code === state.lang) || LANGS[0]).name]);
@@ -371,7 +391,12 @@ function renderHome() {
     return `<button class="rail-card ${here ? 'cur' : ''}" data-stop="${x.id}"><span class="rc-ph"><img src="${x.cover.src}" alt="" style="object-position:${x.cover.pos};transform:scale(${Math.min(x.cover.zoom, 1.6)});transform-origin:${x.cover.pos}"><span class="rc-n tnum">${x.n}</span>${done ? '<span class="rc-st"><svg class="i"><use href="#i-check"/></svg></span>' : ''}</span><b>${esc(x.name)}</b><small>${here ? 'Sonando ahora' : `${floorTxt(x.floor)} · ${x.min} min`}</small></button>`;
   }).join('');
 }
-document.addEventListener('click', (e) => { const r = e.target.closest('[data-stop]'); if (!r) return; const id = r.dataset.stop; const was = sheetOpen; if (was) closeSheet(); setTimeout(() => { unlockAll(); state.startedAt ||= Date.now(); playStop(id, { dir: cur === 'home' ? 'push' : 'fade' }); }, was ? 220 : 0); });
+document.addEventListener('click', (e) => {
+  const r = e.target.closest('[data-stop]'); if (!r) return; const id = r.dataset.stop;
+  // En el inicio, el espacio se elige y suena aquí mismo; el play del destacado abre el reproductor.
+  if (r.closest('#hm-rail')) { unlockAll(); state.startedAt ||= Date.now(); playStop(id, { open: false }); haptic(6); gsap.to('#home-scroll', { scrollTo: { y: 0 }, duration: D(0.6), ease: 'power3.inOut' }); return; }
+  const was = sheetOpen; if (was) closeSheet(); setTimeout(() => { unlockAll(); state.startedAt ||= Date.now(); playStop(id, { dir: cur === 'home' ? 'push' : 'fade' }); }, was ? 220 : 0);
+});
 let homeIntroDone = false;
 onEnter.home = () => {
   renderHome();
@@ -383,14 +408,8 @@ onEnter.home = () => {
     .from('#hm-hero .fab', { scale: 0, duration: 0.7, ease: 'back.out(2.4)' }, 0.4)
     .from('#hm-modes .chip', { y: 10, autoAlpha: 0, stagger: 0.05, duration: 0.5 }, 0.35)
     .from('#hm-rail .rail-card', { x: 60, autoAlpha: 0, stagger: 0.05, duration: 0.7 }, 0.45)
-    .from('.hm-grid .tile', { y: 20, autoAlpha: 0, stagger: 0.06, duration: 0.6 }, 0.6)
-    .from('#hm-ask', { y: 80, duration: 0.8, ease: 'back.out(1.4)' }, 0.5);
+    .from('.hm-link', { y: 16, autoAlpha: 0, stagger: 0.06, duration: 0.6 }, 0.6);
 };
-function drawPlanIll() {
-  const here = narrator.started ? curStop() : STOPS[0];
-  $('#plan-ill').innerHTML = `<svg viewBox="-14 -40 400 560" preserveAspectRatio="xMidYMid meet"><path class="wall" style="stroke-width:14" d="${PLAN[0].walls[0]}"/>${here.floor === 0 ? `<circle cx="${here.map.x}" cy="${here.map.y}" r="34" fill="var(--monument)"/>` : ''}</svg>`;
-}
-
 // ---------------------------------------------------------------------------
 // Reproductor
 // ---------------------------------------------------------------------------
@@ -411,7 +430,7 @@ function playStop(id, { open = true, autoplay = true, dir = 'push' } = {}) {
   narrator.load(stopById(id), { route: state.route || 'historica' });
   if (open && cur !== 'player') go('player', { dir });
   if (autoplay) { unlockAll(); playMain(); }
-  renderHome(); drawPlanIll();
+  renderHome();
 }
 let stopClock = Date.now();
 function sentenceHTML(s) {
@@ -451,16 +470,18 @@ narrator.on('sentence', (i, s) => {
   });
   curWords = lyricEls[i] ? $$('.w', lyricEls[i]) : [];
   followNow(); $('#mini-line').textContent = s.plain; hideEndcard();
+  const ps = $('#p-subs-p'); ps.innerHTML = sentenceHTML(s);
+  if (cur === 'player' && subsOn() && pview() === 'imagen' && !state.reduce) gsap.fromTo(ps, { y: 6, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.35 });
   const sp = $('#subs-p'); sp.innerHTML = sentenceHTML(s);
   if (cur === 'ar' && arReady && !state.reduce) gsap.fromTo(sp, { y: 8, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.4 });
   const vl = $('#vc-line'); vl.textContent = s.plain;
 });
-narrator.on('word', (w) => { curWords.forEach((el, k) => el.classList.toggle('on', k <= w)); $$('#subs-p .w').forEach((el, k) => el.classList.toggle('on', k <= w)); });
+narrator.on('word', (w) => { curWords.forEach((el, k) => el.classList.toggle('on', k <= w)); $$('#subs-p .w, #p-subs-p .w').forEach((el, k) => el.classList.toggle('on', k <= w)); });
 narrator.on('chapter', (ch) => {
   setPhoto(ch.photo);
   const portal = ch.focus && PORTALS[ch.focus]; const t = ch.focus && TERMS[ch.focus];
   const cap = $('#p-caption');
-  cap.innerHTML = portal ? `<b>${esc(portal.label)}</b> · ${esc(portal.title)}, ábrelo con la cámara` : t ? `<b>${esc(t.name)}</b> · ${esc(t.cartela)}` : `<b>${esc(ch.title)}</b>`;
+  cap.innerHTML = portal ? `<b>${esc(portal.label)} · ${esc(portal.title)}</b><span>${usesAR() ? 'Ábrelo con la cámara' : esc(portal.sub)}</span>` : t ? `<b>${esc(t.name)}</b><span>${esc(t.cartela)}</span>` : `<b>${esc(ch.title)}</b>`;
   if (!state.reduce) gsap.fromTo(cap, { y: 6, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.5 });
   swapText('#p-chap', ch.title);
   $('#p-chapn').textContent = `Capítulo ${ch.index + 1} de ${narrator.chapters.length}`;
@@ -490,6 +511,7 @@ narrator.on('state', (playing) => {
   if (playing && !state.reduce) gsap.fromTo('#play', { scale: 0.9 }, { scale: 1, duration: 0.6, ease: 'elastic.out(1, 0.45)' });
   if (playing) { state.stopSecs[state.stopId] = state.stopSecs[state.stopId] || 0; stopClock = Date.now(); } else if (state.stopId) state.stopSecs[state.stopId] = (state.stopSecs[state.stopId] || 0) + (Date.now() - stopClock) / 1000;
   musicFollow(); updateMini();
+  if (cur === 'home') $('#hm-k').textContent = heroKicker();
 });
 narrator.on('end', () => {
   const s = narrator.stop; state.visited.add(s.id);
@@ -521,11 +543,31 @@ function setPhoto(ph) {
   const olds = $$('img', wrap).filter((x) => x !== img); kb && kb.kill();
   gsap.fromTo(img, { autoAlpha: 0, scale: ph.zoom * 1.1 }, { autoAlpha: 1, scale: ph.zoom, duration: D(1.1), ease: 'power2.out', onComplete: () => { olds.forEach((o) => o.remove()); if (!state.reduce) kb = gsap.to(img, { scale: ph.zoom * 1.07, xPercent: 1.5, duration: 14, ease: 'sine.inOut', yoyo: true, repeat: -1 }); } });
 }
+// Imagen o texto: se elige uno de los dos, a pantalla completa, para que nada quede apretado.
+function setPView(v, { persist = true } = {}) {
+  const st = $('#p-stage'); if (!st) return;
+  if (persist) { state.pview = v; store.set('pview', v); }
+  const changed = st.dataset.view !== v; st.dataset.view = v; $('#player').classList.toggle('view-texto', v === 'texto');
+  syncSegm('pview', v);
+  if (v === 'texto') requestAnimationFrame(() => followNow(true));
+  if (changed && persist && !state.reduce) gsap.fromTo(v === 'texto' ? '#lyric' : '#p-photo', { autoAlpha: 0, y: 10 }, { autoAlpha: 1, y: 0, duration: 0.45 });
+}
+// Deslizar la foto pasa al momento anterior o siguiente de la pista.
+function bindPhotoSwipe() {
+  const ph = $('#p-photo'); let sx = 0, sy = 0, down = false;
+  ph.addEventListener('pointerdown', (e) => { sx = e.clientX; sy = e.clientY; down = true; ph._swiped = false; });
+  ph.addEventListener('pointerup', (e) => {
+    if (!down) return; down = false; const dx = e.clientX - sx, dy = e.clientY - sy;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > 50) return;
+    ph._swiped = true; const ch = narrator.chapterAt(); const tgt = ch && narrator.chapters[ch.index + (dx < 0 ? 1 : -1)];
+    if (tgt) { narrator.seek(tgt.start + 0.01); haptic(5); if (!narrator.playing) playMain(); }
+  });
+}
 let userScrollAt = 0; let backNowOn = false;
 function followNow(instant = false) {
   const el = lyricEls[narrator.idx]; const ly = $('#lyric'); if (!el || !ly.clientHeight) return;
   if (userScrollAt && performance.now() - userScrollAt < 5000) return;
-  gsap.to(ly, { scrollTo: { y: Math.max(0, el.offsetTop + el.offsetHeight - ly.clientHeight + 4), autoKill: false }, duration: instant || state.reduce ? 0 : 0.9, ease: 'power3.inOut', overwrite: 'auto' });
+  gsap.to(ly, { scrollTo: { y: Math.max(0, el.offsetTop - ly.clientHeight * 0.16), autoKill: false }, duration: instant || state.reduce ? 0 : 0.9, ease: 'power3.inOut', overwrite: 'auto' });
   if (backNowOn) { backNowOn = false; gsap.to('#back-now', { autoAlpha: 0, y: -8, duration: D(0.25) }); }
 }
 function bindLyric() {
@@ -556,7 +598,7 @@ function showEndcard() {
   gsap.from($$('.endcard > *'), { y: 14, autoAlpha: 0, stagger: 0.07, duration: D(0.5), delay: D(0.1) });
 }
 function hideEndcard() { if (!endOn) return; endOn = false; gsap.to('#endcard', { autoAlpha: 0, duration: D(0.25) }); }
-onEnter.player = () => requestAnimationFrame(() => { trackW = $('#track').clientWidth; followNow(true); knobX((narrator.t / (narrator.total || 1)) * trackW); });
+onEnter.player = () => requestAnimationFrame(() => { syncSegm('pview', pview()); trackW = $('#track').clientWidth; followNow(true); knobX((narrator.t / (narrator.total || 1)) * trackW); });
 
 // Cola: lo que suena después (pista ampliada) o lo que está sonando ahora
 function renderQueue() {
@@ -664,7 +706,7 @@ function bindSheetDrag(sh) {
 // Ficha de la obra: 3D, foto y pista ampliada. La pista de la sala sigue sonando.
 // ---------------------------------------------------------------------------
 let termCur = null; let viewer = null; let viewerMod = null; let termList = [];
-const loadViewer = () => (viewerMod ||= import('./viewer3d.js?v=6'));
+const loadViewer = () => (viewerMod ||= import('./viewer3d.js?v=7'));
 function askFor(t) {
   if (t.kind === 'Escultura' || t.kind === 'Persona') return `¿Quién fue ${t.name}?`;
   const w = t.name.split(' ')[0].toLowerCase(); const plural = /s$/.test(w);
@@ -765,10 +807,7 @@ function drawMap() {
     }).join('');
     return `<g class="floor" data-f="${f}" transform="translate(0 ${F.y}) scale(${F.k}) translate(${-P.vb[0]} ${-P.vb[1]})">${P.walls.map((d) => `<path class="wall" d="${d}"/>`).join('')}${P.thin.map((d) => `<path class="wall-thin" d="${d}"/>`).join('')}<g class="stairs" transform="translate(${P.stairs[0]} ${P.stairs[1]})"><svg width="24" height="24" viewBox="0 0 24 24" class="i"><use href="#i-stairs"/></svg></g>${P.labels.map(([t, x, y, a]) => `<text class="plabel" x="${x}" y="${y}" text-anchor="${a}">${t}</text>`).join('')}${pins}</g>`;
   };
-  $('#plan-wrap').innerHTML = `<svg viewBox="0 0 ${MAP_W} ${MAP_H}" role="img" aria-label="Plano de la basílica: planta 1 (camarín) arriba y planta 0 (iglesia) abajo, con los diez puntos de audioguía">
-    <text class="fhead" x="16" y="24">PLANTA 1 · CAMARÍN</text>${floorG(1)}
-    <line class="fsep" x1="16" x2="${MAP_W - 16}" y1="${FL[0].y - 30}" y2="${FL[0].y - 30}"/>
-    <text class="fhead" x="16" y="${FL[0].y - 8}">PLANTA 0 · IGLESIA</text>${floorG(0)}</svg>`;
+  $('#plan-wrap').innerHTML = `<svg viewBox="0 0 ${MAP_W} ${MAP_H}" role="img" aria-label="Plano de la basílica: planta 1 (camarín) arriba y planta 0 (iglesia) abajo, con los diez puntos de audioguía">${floorG(1)}${floorG(0)}</svg>`;
   pulseHere();
 }
 let haloTw = null;
@@ -776,8 +815,10 @@ function pulseHere() { haloTw && haloTw.kill(); const h = $('#plan-wrap .halo');
 function renderMapSheet() {
   const here = narrator.started ? narrator.stop : null; const sel = stopById(mapSel) || STOPS[0];
   const isHere = here && here.id === sel.id; const isNext = here ? nextStop(here)?.id === sel.id : STOPS[0].id === sel.id;
-  const eyebrow = isHere ? `Estás aquí · <b>${floorTxt(sel.floor)}</b>` : isNext && here ? `Siguiente${sel.floor !== here.floor ? `, en la planta ${sel.floor}` : ''}` : `Espacio ${sel.n} de ${STOPS.length} · ${floorTxt(sel.floor)}`;
-  $('#mapsheet').innerHTML = `<div class="ms-row"><img src="${sel.cover.src}" alt="" style="object-position:${sel.cover.pos}"><div><div class="eyebrow">${eyebrow}</div><h2>${sel.n} · ${esc(sel.name)}</h2><p>${esc(sel.howto)}</p></div></div><button class="btn primary wide" data-act="map-play"><svg class="i fill"><use href="#i-play"/></svg>${isHere ? 'Seguir escuchando' : 'Escuchar este espacio'}</button>`;
+  const fl = (f) => `planta ${f}, ${f === 1 ? 'camarín' : 'iglesia'}`;
+  const eyebrow = isHere ? `Estás aquí · <b>${fl(sel.floor)}</b>` : isNext && here ? `Siguiente${sel.floor !== here.floor ? `, en la ${fl(sel.floor)}` : ''}` : `Espacio ${sel.n} de ${STOPS.length} · ${fl(sel.floor)}`;
+  // Si es el que suena, no hay botón: el reproductor pequeño de abajo ya lo controla.
+  $('#mapsheet').innerHTML = `<div class="ms-row"><img src="${sel.cover.src}" alt="" style="object-position:${sel.cover.pos}"><div><div class="eyebrow">${eyebrow}</div><h2>${sel.n} · ${esc(sel.name)}</h2><p>${esc(sel.howto)}</p></div></div>${isHere ? '' : '<button class="btn primary wide" data-act="map-play"><svg class="i fill"><use href="#i-play"/></svg>Escuchar este espacio</button>'}`;
   gsap.fromTo($$('#mapsheet > *'), { y: 12, autoAlpha: 0 }, { y: 0, autoAlpha: 1, stagger: 0.05, duration: D(0.45) });
   $$('#fchips button').forEach((b) => { b.classList.toggle('on', +b.dataset.floor === sel.floor); b.classList.toggle('here', here ? +b.dataset.floor === here.floor : +b.dataset.floor === 0); });
 }
@@ -867,6 +908,7 @@ function bindSettings() {
     const b = e.target.closest('button[data-v]'); if (!b) return; const name = seg.dataset.segm; const v = b.dataset.v; syncSegm(name, v); haptic(5);
     if (name === 'textSize') { state.textSize = v; store.set('textSize', v); applyPrefs(); gsap.fromTo('#set-preview', { scale: 0.97, transformOrigin: '0 50%' }, { scale: 1, duration: 0.5, ease: 'back.out(2)' }); }
     if (name === 'speed') setSpeed(+v);
+    if (name === 'pview') setPView(v);
     if (name === 'theme') { state.theme = v; store.set('theme', v); applyPrefs(); }
     if (name === 'route' && v !== state.route) { state.route = v; saveProfile(); if (narrator.stop) { const was = narrator.playing; narrator.load(curStop(), { route: v }); if (was) playMain(); } toast(`Ahora te guía ${RT().who.toLowerCase().startsWith('el') ? RT().who.toLowerCase() : RT().who}`, 'i-route'); updateVisitLabel(); }
   }));
@@ -881,7 +923,7 @@ function bindSettings() {
 }
 function syncToggles() { $$('[data-toggle]').forEach((row) => { const on = !!state[row.dataset.toggle]; const sw = row.querySelector('.sw'); sw.classList.toggle('on', on); sw.setAttribute('aria-checked', on); }); }
 function updateVoiceLabel() { const small = $('[data-toggle="voice"] small'); const e = narrator.engine; const name = { eleven_v4_turbo: 'ElevenLabs v4 Turbo', eleven_v4: 'ElevenLabs v4', eleven_flash_v2_5: 'ElevenLabs Flash v2.5' }[cloud.status.model] || 'ElevenLabs v4 Turbo'; small.textContent = e === 'cloud' ? `${name}, en tiempo real` : e === 'device' ? 'Voz del dispositivo (sin conexión con ElevenLabs)' : 'Sin voz: solo texto'; }
-function updateVisitLabel() { $('#set-visit').textContent = isBlind() ? 'Por voz y automática' : { ar: 'Con realidad aumentada', auto: 'Automática, con realidad aumentada', audio: 'Solo audio y texto' }[state.mode] || 'Con realidad aumentada'; }
+function updateVisitLabel() { $('#set-visit').textContent = modeLabel(); }
 onEnter.settings = () => {
   syncToggles(); updateVoiceLabel(); updateVisitLabel(); $('#music-level').value = Math.round(state.musicLevel * 100);
   syncSegm('textSize', state.textSize); syncSegm('speed', String(state.speed)); syncSegm('theme', state.theme); syncSegm('route', state.route || 'historica');
@@ -908,7 +950,7 @@ async function guideAnswer(q, { onText, onSentence } = {}) {
 }
 function guideState(s) {
   if (state.route === 'arte') { orbTl && orbTl.kill(); if (s === 'talk' && !state.reduce) orbTl = gsap.to('#gd-orb i', { scaleY: () => gsap.utils.random(0.3, 1), duration: 0.16, repeat: -1, repeatRefresh: true, yoyo: true, stagger: 0.04 }); else gsap.to('#gd-orb i', { scaleY: s === 'listen' ? 0.45 : 0.25, duration: 0.3 }); }
-  else portrait && portrait.set(s);
+  else if (portrait) { portrait.set(s); portrait.talk(s === 'talk'); }
   $('#gd-status').textContent = s === 'talk' ? 'Te está respondiendo…' : s === 'listen' ? 'Te escucha' : state.route === 'arte' ? 'Tu guía en la app' : 'La escultura de su capilla, animada';
 }
 async function openGuide(prefill) {
@@ -917,7 +959,7 @@ async function openGuide(prefill) {
   renderSugg('#as-sugg', (narrator.started ? curStop() : STOPS[0]).suggest);
   openSheet('sh-guide', { onClose: () => { portrait && portrait.stop(); stopSpeaking(); } });
   if (state.route !== 'arte') {
-    try { const m = await loadViewer(); if (!portrait) portrait = new m.Portrait($('#gd-portrait')); portrait.start(); await portrait.ready; portrait.set('greet'); setTimeout(() => sheetOpen === 'sh-guide' && portrait.set('idle'), 4200); } catch (e) { console.warn(e); }
+    try { const m = await loadViewer(); if (!portrait) portrait = new m.Portrait($('#gd-portrait'), { bust: true }); portrait.start(); await portrait.ready; portrait.set('greet'); setTimeout(() => sheetOpen === 'sh-guide' && portrait.set('idle'), 4200); } catch (e) { console.warn(e); }
   }
   guideState('idle');
   if (prefill) setTimeout(() => askGuide(prefill), 450);
@@ -940,7 +982,7 @@ function streamWords(el, onNew) {
   };
 }
 let asBusy = false;
-async function askGuide(q, { spoken = voiceAsk() } = {}) {
+async function askGuide(q, { spoken = voiceAsk() || state.voice } = {}) { // con la voz activada, el guía responde hablando
   q = q.trim(); if (!q || asBusy) return;
   if (sheetOpen !== 'sh-guide' && cur !== 'voice') { await openGuide(); }
   asBusy = true; state.asked.push(q);
@@ -983,7 +1025,7 @@ function speakAnswer(el, text) {
 document.addEventListener('click', (e) => { const c = e.target.closest('[data-cite]'); if (!c) return; closeSheet(); setTimeout(() => playStop(c.dataset.cite, { dir: 'up' }), 300); });
 function bindForms() {
   const inp = $('#as-input');
-  $('#as-form').addEventListener('submit', (e) => { e.preventDefault(); const v = inp.value; inp.value = ''; inp.blur(); askGuide(v, { spoken: false }); });
+  $('#as-form').addEventListener('submit', (e) => { e.preventDefault(); const v = inp.value; inp.value = ''; inp.blur(); askGuide(v); });
 }
 
 // Micrófono siempre abierto (modos sin pantalla). Ignora lo que coincide con lo que está diciendo la voz.
@@ -1046,7 +1088,7 @@ function permOk() {
 function permNo() {
   state.permsAsked = true; const done = permDone; permDone = null;
   if (permNeeds.includes('camera') && permNeeds.length === 1) { closeSheet(); return; }
-  if (permNeeds.includes('camera')) { state.mode = 'audio'; saveProfile(); toast('Sin cámara: la visita sigue con audio y texto', 'i-headph'); }
+  if (permNeeds.includes('camera')) { state.ar = 'no'; saveProfile(); toast('Sin cámara: la visita sigue con audio y texto', 'i-headph'); }
   closeSheet(); done && done();
 }
 
@@ -1054,7 +1096,7 @@ function permNo() {
 // Realidad aumentada: puntos, obras en 3D, portales y fotos
 // ---------------------------------------------------------------------------
 let arMod = null; let ar = null; let arReady = false; let arFrom = 'player'; let scanLoops = []; let arFocus = null;
-const loadAR = () => (arMod ||= import('./ar.js?v=6'));
+const loadAR = () => (arMod ||= import('./ar.js?v=7'));
 function openAR(focus) { ensureStop(); arFocus = focus || null; if (!state.camAsked) { openPerm(['camera'], () => enterAR({ autoplay: false })); return; } enterAR({ autoplay: false }); }
 async function enterAR({ autoplay = false } = {}) {
   let m; try { m = await loadAR(); } catch (e) { toast('No se ha podido cargar la realidad aumentada'); return; }
@@ -1149,9 +1191,9 @@ function arrive() {
 }
 
 // ---------------------------------------------------------------------------
-// Cierre: resumen tipo historias, compartir, valoración y gracias
+// Cierre: el resumen en una sola pantalla (la misma imagen que se comparte), valoración y gracias
 // ---------------------------------------------------------------------------
-let storyI = 0; let storyTl = null; let shareBlob = null;
+let shareBlob = null;
 function visitStats() {
   const heard = STOPS.filter((x) => state.visited.has(x.id)); const mins = Math.max(1, Math.round((Date.now() - (state.startedAt || Date.now())) / 60000));
   const opened = [...state.opened].filter((id) => TERMS[id]);
@@ -1160,55 +1202,62 @@ function visitStats() {
 }
 function openRecap() {
   if (narrator.playing) narrator.pause(); if (detail.playing) detail.pause();
-  const st = visitStats(); const rt = RT();
-  const covers = state.photos.length ? state.photos.map((p) => ({ src: p.src, cap: '' })) /* la foto ya lleva su pie */ : STOPS.filter((x) => state.visited.has(x.id)).concat(STOPS).slice(0, 6).map((x) => ({ src: x.cover.src, cap: x.short }));
-  const slides = [
-    `<div class="rc-slide"><div class="bg"><img src="assets/img/sjd-8.jpg" alt=""></div><span class="rc-k">Tu visita · ${new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}</span><h2>Has recorrido la Basílica de San Juan de Dios</h2><p class="lead">${esc(rt.long)}, ${state.route === 'arte' ? 'con el narrador' : 'de la mano de San Juan de Dios'}.</p><div class="big tnum">${st.heard}<small> de 10 espacios</small></div></div>`,
-    `<div class="rc-slide"><div class="bg"><img src="assets/img/sjd-14.jpg" alt=""></div><span class="rc-k">En cifras</span><h2>Tu paso por la basílica</h2><div class="rc-stats"><div><b class="tnum">${st.mins}</b><span>minutos de visita</span></div><div><b class="tnum">2</b><span>plantas recorridas</span></div><div><b class="tnum">${st.opened.length}</b><span>obras vistas en 3D</span></div><div><b class="tnum">${st.asked}</b><span>preguntas ${esc(rt.toWho)}</span></div></div></div>`,
-    `<div class="rc-slide"><div class="bg"><img src="${st.top[0].cover.src}" alt=""></div><span class="rc-k">Donde más te paraste</span><h2>${esc(st.top[0].name)}</h2><div class="rc-top3">${st.top.map((x, i) => `<div><span class="n">${i + 1}</span><img src="${x.cover.src}" alt=""><span><b>${esc(x.name)}</b><small>${floorTxt(x.floor)}</small></span></div>`).join('')}</div></div>`,
-    `<div class="rc-slide"><span class="rc-k">Tu fotodump</span><h2>${state.photos.length ? `${state.photos.length} foto${state.photos.length > 1 ? 's' : ''} de tu visita` : 'Los espacios de tu visita'}</h2><div class="dump">${covers.slice(0, 6).map((c) => `<figure><img src="${c.src}" alt="">${c.cap ? `<figcaption>${esc(c.cap)}</figcaption>` : ''}</figure>`).join('')}</div>${state.photos.length ? '' : '<p class="lead" style="font-size:15px">Haz fotos con la cámara durante la visita y aparecerán aquí.</p>'}</div>`,
-    `<div class="rc-slide"><span class="rc-k">Compártela</span><h2>Tu visita, lista para compartir</h2><div class="share-card"><img id="share-img" alt="Imagen para compartir con el resumen de tu visita"></div><div class="share-row"><button class="ig" data-act="share-ig"><span><svg class="i"><use href="#i-camera"/></svg></span>Historias</button><button class="wa" data-act="share-wa"><span><svg class="i"><use href="#i-chat"/></svg></span>WhatsApp</button><button data-act="share-save"><span><svg class="i"><use href="#i-download"/></svg></span>Guardar</button><button data-act="share"><span><svg class="i"><use href="#i-share"/></svg></span>Más</button></div><button class="btn primary wide rc-next" data-act="to-rate">Valorar la visita</button></div>`,
-  ];
-  $('#rc-slides').innerHTML = slides.join('');
-  $('#rc-bars').innerHTML = slides.map(() => '<i><b></b></i>').join('');
+  const st = visitStats();
+  const covers = state.photos.length ? state.photos.map((p) => ({ src: p.src })).concat(st.top.map((x) => ({ src: x.cover.src }))) : st.top.map((x) => ({ src: x.cover.src }));
+  shareBlob = null; const im = $('#share-img'); im.removeAttribute('src');
+  gsap.set('#rc-poster', { autoAlpha: 0 }); gsap.set(['.recap .share-row button', '.recap .rc-body > .btn'], { autoAlpha: 0, y: 16 });
   go('recap', { dir: 'up' });
-  buildShareImage(st, covers).then((b) => { shareBlob = b; const u = URL.createObjectURL(b); const im = $('#share-img'); if (im) im.src = u; }).catch((e) => console.warn(e));
-  storyGo(0);
+  buildShareImage(st, covers).then((b) => {
+    shareBlob = b;
+    im.onload = () => {
+      gsap.timeline()
+        .fromTo('#rc-poster', { autoAlpha: 0, y: 40, rotation: -5, scale: 0.88 }, { autoAlpha: 1, y: 0, rotation: 0, scale: 1, duration: D(0.9), ease: 'back.out(1.4)' })
+        .fromTo('.rc-shine', { xPercent: -130 }, { xPercent: 130, duration: D(1.2), ease: 'power2.inOut' }, '-=0.35')
+        .to(['.recap .share-row button', '.recap .rc-body > .btn'], { autoAlpha: 1, y: 0, stagger: 0.06, duration: D(0.5) }, '-=1');
+    };
+    im.src = URL.createObjectURL(b);
+  }).catch((e) => console.warn(e));
 }
-function storyGo(i) {
-  const sl = $$('#rc-slides .rc-slide'); const bars = $$('#rc-bars b'); if (i < 0) i = 0; if (i >= sl.length) { ACT['to-rate'](); return; }
-  storyI = i; storyTl && storyTl.kill();
-  sl.forEach((s, k) => s.classList.toggle('on', k === i)); bars.forEach((b, k) => gsap.set(b, { scaleX: k < i ? 1 : 0 }));
-  const s = sl[i];
-  gsap.fromTo(s.querySelectorAll(':scope > *:not(.bg)'), { y: 30, autoAlpha: 0 }, { y: 0, autoAlpha: 1, stagger: 0.08, duration: D(0.7), ease: 'expo.out' });
-  const bg = s.querySelector('.bg img'); bg && gsap.fromTo(bg, { scale: 1.15 }, { scale: 1, duration: 6, ease: 'none' });
-  const big = s.querySelector('.big'); if (big && !state.reduce) { const n = parseInt(big.textContent, 10); const o = { v: 0 }; gsap.to(o, { v: n, duration: 1.2, ease: 'power3.out', onUpdate: () => { big.firstChild.textContent = Math.round(o.v); } }); }
-  $$('.rc-stats b', s).forEach((b) => { const n = parseInt(b.textContent, 10); const o = { v: 0 }; gsap.to(o, { v: n, duration: 1.1, delay: 0.3, ease: 'power3.out', onUpdate: () => { b.textContent = Math.round(o.v); } }); });
-  $$('.dump figure', s).forEach((f, k) => gsap.fromTo(f, { scale: 0.6, rotation: gsap.utils.random(-8, 8), autoAlpha: 0 }, { scale: 1, rotation: 0, autoAlpha: 1, duration: D(0.6), delay: 0.15 + k * 0.08, ease: 'back.out(1.8)' }));
-  const last = i === sl.length - 1;
-  $('.rc-tap').style.display = last ? 'none' : '';
-  if (!last) storyTl = gsap.to(bars[i], { scaleX: 1, duration: state.reduce ? 8 : 6, ease: 'none', onComplete: () => storyGo(i + 1) });
-  else gsap.set(bars[i], { scaleX: 1 });
-}
-function stopStory() { storyTl && storyTl.kill(); }
-onLeave.recap = () => stopStory();
+// Imagen de 1080 × 1920 con el aire de un «wrapped»: carmesí, el arco de la basílica, tus fotos y tus cifras.
 async function buildShareImage(st, covers) {
-  const c = document.createElement('canvas'); c.width = 1080; c.height = 1920; const x = c.getContext('2d');
-  x.fillStyle = '#0B0C0E'; x.fillRect(0, 0, 1080, 1920);
+  const W = 1080, H = 1920; const c = document.createElement('canvas'); c.width = W; c.height = H; const x = c.getContext('2d');
+  const FAM = '"Atkinson Hyperlegible Next", system-ui, sans-serif'; const F = (w, px) => `${w} ${px}px ${FAM}`;
+  try { await Promise.all([800, 600, 500].map((w) => document.fonts.load(`${w} 40px "Atkinson Hyperlegible Next"`))); } catch (e) {}
   const load = (src) => new Promise((res) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
-  const imgs = (await Promise.all(covers.slice(0, 5).map((cv) => load(cv.src)))).filter(Boolean);
-  const cells = [[60, 380, 620, 760], [700, 380, 320, 370], [700, 770, 320, 370], [60, 1160, 470, 420], [550, 1160, 470, 420]];
-  imgs.forEach((im, k) => { const [X, Y, W, H] = cells[k]; const sc = Math.max(W / im.width, H / im.height); x.save(); rr(x, X, Y, W, H, 36); x.clip(); x.drawImage(im, X + (W - im.width * sc) / 2, Y + (H - im.height * sc) / 2, im.width * sc, im.height * sc); x.restore(); });
-  x.fillStyle = '#FF8FB0'; x.font = '800 34px "Atkinson Hyperlegible Next", system-ui'; x.fillText('MI VISITA', 60, 150);
-  x.fillStyle = '#fff'; x.font = '800 72px "Atkinson Hyperlegible Next", system-ui'; x.fillText('Basílica de', 60, 240); x.fillText('San Juan de Dios', 60, 322);
-  x.font = '800 96px "Atkinson Hyperlegible Next", system-ui'; x.fillText(`${st.heard}/10`, 60, 1720); x.font = '500 36px "Atkinson Hyperlegible Next", system-ui'; x.fillStyle = 'rgba(255,255,255,.75)'; x.fillText('espacios', 60, 1770);
-  x.fillStyle = '#fff'; x.font = '800 96px "Atkinson Hyperlegible Next", system-ui'; x.fillText(`${st.mins}`, 420, 1720); x.font = '500 36px "Atkinson Hyperlegible Next", system-ui'; x.fillStyle = 'rgba(255,255,255,.75)'; x.fillText('minutos', 420, 1770);
-  x.fillStyle = '#fff'; x.font = '800 96px "Atkinson Hyperlegible Next", system-ui'; x.fillText(`${st.opened.length}`, 760, 1720); x.font = '500 36px "Atkinson Hyperlegible Next", system-ui'; x.fillStyle = 'rgba(255,255,255,.75)'; x.fillText('obras en 3D', 760, 1770);
-  x.fillStyle = 'rgba(255,255,255,.6)'; x.font = '700 30px "Atkinson Hyperlegible Next", system-ui'; const made = 'Audioguía oficial · con tecnología'; x.fillText(made, 60, 1860);
-  const sym = document.getElementById('og-logo'); // logotipo de OptimaGuía, en blanco
+  const spaced = (t, X, Y, sp) => { if ('letterSpacing' in x) { x.letterSpacing = `${sp}px`; x.fillText(t, X, Y); x.letterSpacing = '0px'; } else x.fillText(t, X, Y); };
+  // Fondo: carmesí profundo con la luz arriba
+  let g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, '#9A0A37'); g.addColorStop(0.5, '#5E061F'); g.addColorStop(1, '#1E020C'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  g = x.createRadialGradient(900, 120, 0, 900, 120, 760); g.addColorStop(0, 'rgba(255,176,146,.34)'); g.addColorStop(1, 'rgba(255,176,146,0)'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  // El arco de la basílica, en dorado, detrás de la foto
+  const arch = (cx, top, w, h) => { const r = w / 2; x.beginPath(); x.moveTo(cx - r, top + h); x.lineTo(cx - r, top + r); x.arc(cx, top + r, r, Math.PI, 0); x.lineTo(cx + r, top + h); };
+  x.lineWidth = 4; x.strokeStyle = 'rgba(226,182,91,.5)'; arch(540, 470, 860, 860); x.stroke();
+  x.strokeStyle = 'rgba(226,182,91,.22)'; arch(540, 432, 936, 900); x.stroke();
+  // Cabecera
+  const date = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase();
+  x.fillStyle = '#FFC4AE'; x.font = F(800, 30); spaced(`MI VISITA · ${date}`, 90, 150, 5);
+  x.fillStyle = '#FFFFFF'; x.font = F(800, 98); x.fillText('Basílica de', 90, 262); x.fillText('San Juan de Dios', 90, 364);
+  x.fillStyle = 'rgba(255,255,255,.84)'; x.font = F(500, 38); x.fillText(state.route === 'arte' ? 'Visita de arte y arquitectura' : 'Visita histórica, con San Juan de Dios', 90, 430);
+  // Fotos: la primera dentro del arco, la segunda como una polaroid
+  const imgs = (await Promise.all(covers.slice(0, 2).map((cv) => load(cv.src)))).filter(Boolean);
+  const cover = (im, X, Y, w, h) => { const sc = Math.max(w / im.width, h / im.height); x.drawImage(im, X + (w - im.width * sc) / 2, Y + (h - im.height * sc) / 2, im.width * sc, im.height * sc); };
+  if (imgs[0]) { x.save(); arch(540, 510, 740, 740); x.closePath(); x.clip(); cover(imgs[0], 170, 510, 740, 740); x.restore(); x.lineWidth = 10; x.strokeStyle = '#FFE9DC'; arch(540, 510, 740, 740); x.closePath(); x.stroke(); }
+  if (imgs[1]) { x.save(); x.translate(845, 1110); x.rotate(0.09); x.shadowColor = 'rgba(0,0,0,.5)'; x.shadowBlur = 44; x.fillStyle = '#FFF7F1'; x.fillRect(-140, -175, 280, 330); x.shadowBlur = 0; x.beginPath(); x.rect(-124, -159, 248, 262); x.clip(); cover(imgs[1], -124, -159, 248, 262); x.restore(); }
+  // Cifras
+  const stat = (n, label, X, Y) => { x.fillStyle = '#FFFFFF'; x.font = F(800, 150); x.fillText(n, X, Y); x.fillStyle = 'rgba(255,228,214,.8)'; x.font = F(600, 34); x.fillText(label, X + 6, Y + 50); };
+  stat(`${st.heard}/10`, 'espacios recorridos', 90, 1462);
+  stat(`${st.mins}`, st.mins === 1 ? 'minuto de visita' : 'minutos de visita', 600, 1462);
+  stat(`${st.opened.length}`, st.opened.length === 1 ? 'obra vista en 3D' : 'obras vistas en 3D', 90, 1672);
+  stat(`${st.asked}`, st.asked === 1 ? 'pregunta al guía' : 'preguntas al guía', 600, 1672);
+  // Donde más te paraste
+  x.fillStyle = '#E2B65B'; x.font = F(800, 28); spaced('DONDE MÁS TE PARASTE', 90, 1782, 4);
+  const lw = 'letterSpacing' in x ? x.measureText('DONDE MÁS TE PARASTE').width + 4 * 20 : x.measureText('DONDE MÁS TE PARASTE').width;
+  x.fillStyle = '#FFFFFF'; x.font = F(800, 40); x.fillText(st.top[0].name, 90 + lw + 22, 1784);
+  // Pie: audioguía oficial, con tecnología de OptimaGuía
+  x.fillStyle = 'rgba(255,255,255,.62)'; x.font = F(700, 30); const made = 'Audioguía oficial · con tecnología'; x.fillText(made, 90, 1868);
+  const sym = document.getElementById('og-logo');
   const logo = sym && await load('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${sym.getAttribute('viewBox')}" fill="#ffffff">${sym.innerHTML}</svg>`));
-  if (logo) { const h = 26, w = h * 846.13 / 123.73; x.globalAlpha = 0.9; x.drawImage(logo, 60 + x.measureText(made).width + 14, 1860 - 23, w, h); x.globalAlpha = 1; }
-  return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.88));
+  if (logo) { const h = 26, w = h * 846.13 / 123.73; x.globalAlpha = 0.9; x.drawImage(logo, 90 + x.measureText(made).width + 14, 1868 - 23, w, h); x.globalAlpha = 1; }
+  return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.9));
 }
 function rr(x, X, Y, w, h, r) { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); }
 async function shareRecap(target) {
@@ -1227,7 +1276,7 @@ function buildRate() {
 }
 onEnter.rate = () => { if (!state.reduce) gsap.from(['.rate-scroll > *', '#score button'], { y: 16, autoAlpha: 0, stagger: 0.03, duration: 0.5, delay: 0.2 }); };
 function sendRating() {
-  const data = { score: state.rating, mejorar: $$('#improve .on').map((b) => b.dataset.imp), texto: $('#rate-text').value.trim(), ruta: state.route, modo: state.mode, acceso: state.access, espacios: [...state.visited], fecha: new Date().toISOString() };
+  const data = { score: state.rating, mejorar: $$('#improve .on').map((b) => b.dataset.imp), texto: $('#rate-text').value.trim(), ruta: state.route, realidadAumentada: state.ar, avance: state.advance, acceso: state.access, espacios: [...state.visited], fecha: new Date().toISOString() };
   store.set('valoracion', data); console.info('Valoración (en producción, al servidor de analítica):', data);
   go('thanks', { dir: 'push' });
 }
@@ -1237,7 +1286,8 @@ onEnter.thanks = () => { music.stop(); if (!state.reduce) gsap.timeline().from('
 // Tutorial
 // ---------------------------------------------------------------------------
 const TUT = [
-  { sel: () => $('#lyric .s.now .term') || $('#lyric .term'), title: 'Toca las palabras subrayadas', text: 'Se abre la obra en 3D, con su pista ampliada. La pista de la sala no se corta.' },
+  { sel: () => $('#pview-seg'), title: 'Imagen o texto', text: 'Mira la foto de cada momento o lee la pista completa. Al lado puedes activar los subtítulos.' },
+  { sel: () => (pview() === 'texto' ? $('#lyric .s.now .term') || $('#lyric .term') : $('#p-photo')), title: 'Toca la obra', text: 'Se abre en 3D, con su pista ampliada. La pista de la sala no se corta.' },
   { sel: () => $('#p-arbtn'), title: 'Mírala en la sala', text: 'Con la cámara verás los puntos de cada sala y, en dos espacios, un portal a otra época.' },
   { sel: () => $('#player .bar .tools .ib'), title: 'El plano, siempre a mano', text: 'Aquí tienes las dos plantas y los puntos de audio. En el mismo botón vuelves a la audioguía.' },
   { sel: () => $('#player .ask'), title: `Pregunta lo que quieras`, text: 'Tu guía responde solo con las fuentes verificadas por la basílica.' },
@@ -1273,8 +1323,8 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && nar
 
 $('#sprite').insertAdjacentHTML('afterbegin', LOGO_SYMBOLS);
 $$('.screen').forEach((s) => { screens[s.id] = s; });
-applyPrefs(); buildSurvey(); buildRate(); renderHome(); drawPlanIll(); bindPress(); bindTrack(); bindLyric(); bindSettings(); bindForms(); bindMap(); renderQR();
+applyPrefs(); buildSurvey(); buildRate(); renderHome(); bindPress(); bindPhotoSwipe(); bindTrack(); bindLyric(); bindSettings(); bindForms(); bindMap(); renderQR();
 screens.cover.classList.add('is-on');
 intro();
 setTimeout(() => { loadAR().catch(() => {}); loadViewer().then((m) => m.loadFray()).catch(() => {}); }, 7000);
-window.__og = { state, narrator, detail, go, STOPS, openTerm, openGuide, openStops, openLang, openPerm, startWalk, openRecap, storyGo, setTermView, showStep, enterAR, openPortalUI, takePhoto, playStop, closeSheet, applyPrefs, renderHome, askGuide, playDetail, termItem, toast, get ar() { return ar; } }; // para las pruebas y las capturas
+window.__og = { state, narrator, detail, go, STOPS, openTerm, openGuide, openStops, openLang, openPerm, startWalk, openRecap, setTermView, setPView, showStep, enterAR, openPortalUI, takePhoto, playStop, closeSheet, applyPrefs, renderHome, askGuide, playDetail, termItem, toast, get ar() { return ar; } }; // para las pruebas y las capturas
