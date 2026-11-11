@@ -68,6 +68,7 @@ p { margin: 0; }
   .desk { display: block; position: fixed; top: 50%; left: max(32px, calc(58% - 201px - 440px)); width: 380px; transform: translateY(-50%); color: var(--ink); }
   .desk-brand { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; color: var(--ink-2); }
   .desk-brand .seal { width: 28px; height: 28px; color: var(--monument); }
+  .desk-brand .og-logo { width: 96px; height: 14px; color: var(--ink); }
   .desk h1 { font-size: 34px; line-height: 1.08; margin-top: 18px; }
   .desk p { margin-top: 14px; font-size: 17px; line-height: 1.5; color: var(--ink-2); }
   .desk-qr { display: flex; gap: 16px; align-items: center; margin-top: 26px; padding: 14px; border-radius: 20px; background: var(--ground); box-shadow: inset 0 0 0 1px var(--hair); }
@@ -607,13 +608,13 @@ p { margin: 0; }
 /* =========================================================================
    v5 · audioguía final para desarrollo
    ========================================================================= */
-.og { width: 18px; height: 18px; color: currentColor; flex: none; }
-.og-lock { display: inline-flex; align-items: center; gap: 12px; color: #fff; }
-.og-lock .og-mark { width: 44px; height: 44px; }
-.og-word { font-size: 34px; font-weight: 500; letter-spacing: -0.02em; }
-.og-word b { font-weight: 800; }
-.og-lock.sm .og-mark { width: 24px; height: 24px; }
-.og-lock.sm .og-word { font-size: 18px; }
+/* Logotipo de OptimaGuía: 846 × 124 (6,84 : 1), en el color del texto */
+.og-logo { display: block; flex: none; fill: currentColor; overflow: visible; }
+.og-lock { display: inline-flex; align-items: center; color: #fff; }
+#splash .og-logo { width: 236px; height: 34.5px; }
+.og-lock.sm .og-logo { width: 103px; height: 15px; }
+.made-by .og-logo { width: 89px; height: 13px; margin-left: 4px; color: var(--ink); }
+.made-by.dark .og-logo { color: #fff; }
 .av-s { width: 28px; height: 28px; border-radius: 999px; flex: none; background: url(../assets/img/avatar-sjd.jpg) center 20%/cover, #3a2d24; box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
 .route-arte .av-s { background: radial-gradient(circle, transparent 0 30%, #fff 31% 41%, transparent 42%), var(--monument); }
 

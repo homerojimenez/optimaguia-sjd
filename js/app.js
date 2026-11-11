@@ -227,9 +227,11 @@ async function intro() {
   if (state.reduce) { await preload(); gsap.set('#splash', { autoAlpha: 0 }); return; }
   gsap.set(['.og-lock', '.sp-line', '.sp-for', '.sjd-lock'], { autoAlpha: 0 });
   const tl = gsap.timeline();
-  tl.fromTo('#splash .og-mark', { rotation: -120, scale: 0.4 }, { rotation: 0, scale: 1, duration: 1, ease: 'expo.out' })
-    .to('#splash .og-lock', { autoAlpha: 1, duration: 0.4 }, 0)
-    .from('#splash .og-word', { x: -14, autoAlpha: 0, duration: 0.7 }, 0.25)
+  // OPTIMA sube, la barra cae sobre la O y GUIA entra detrás
+  tl.set('#splash .og-lock', { autoAlpha: 1 }, 0)
+    .fromTo('#splash .og-optima', { y: 26, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.8, ease: 'expo.out' }, 0)
+    .fromTo('#splash .og-bar', { y: -60, scaleX: 0.2, autoAlpha: 0, transformOrigin: '50% 50%' }, { y: 0, scaleX: 1, autoAlpha: 1, duration: 0.75, ease: 'back.out(2.2)' }, 0.3)
+    .fromTo('#splash .og-guia', { x: -24, autoAlpha: 0 }, { x: 0, autoAlpha: 1, duration: 0.8, ease: 'expo.out' }, 0.45)
     .fromTo('#splash .sp-line', { scaleY: 0, autoAlpha: 1 }, { scaleY: 1, duration: 0.6, ease: 'power2.inOut' }, 0.6)
     .to('#splash .sp-for', { autoAlpha: 1, duration: 0.5 }, 0.95)
     .fromTo('#splash .sjd-lock', { y: 12, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: 0.7 }, 1.05);
@@ -1202,7 +1204,10 @@ async function buildShareImage(st, covers) {
   x.font = '800 96px "Atkinson Hyperlegible Next", system-ui'; x.fillText(`${st.heard}/10`, 60, 1720); x.font = '500 36px "Atkinson Hyperlegible Next", system-ui'; x.fillStyle = 'rgba(255,255,255,.75)'; x.fillText('espacios', 60, 1770);
   x.fillStyle = '#fff'; x.font = '800 96px "Atkinson Hyperlegible Next", system-ui'; x.fillText(`${st.mins}`, 420, 1720); x.font = '500 36px "Atkinson Hyperlegible Next", system-ui'; x.fillStyle = 'rgba(255,255,255,.75)'; x.fillText('minutos', 420, 1770);
   x.fillStyle = '#fff'; x.font = '800 96px "Atkinson Hyperlegible Next", system-ui'; x.fillText(`${st.opened.length}`, 760, 1720); x.font = '500 36px "Atkinson Hyperlegible Next", system-ui'; x.fillStyle = 'rgba(255,255,255,.75)'; x.fillText('obras en 3D', 760, 1770);
-  x.fillStyle = 'rgba(255,255,255,.6)'; x.font = '700 30px "Atkinson Hyperlegible Next", system-ui'; x.fillText('Audioguía oficial · con tecnología OptimaGuía', 60, 1860);
+  x.fillStyle = 'rgba(255,255,255,.6)'; x.font = '700 30px "Atkinson Hyperlegible Next", system-ui'; const made = 'Audioguía oficial · con tecnología'; x.fillText(made, 60, 1860);
+  const sym = document.getElementById('og-logo'); // logotipo de OptimaGuía, en blanco
+  const logo = sym && await load('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${sym.getAttribute('viewBox')}" fill="#ffffff">${sym.innerHTML}</svg>`));
+  if (logo) { const h = 26, w = h * 846.13 / 123.73; x.globalAlpha = 0.9; x.drawImage(logo, 60 + x.measureText(made).width + 14, 1860 - 23, w, h); x.globalAlpha = 1; }
   return new Promise((res) => c.toBlob(res, 'image/jpeg', 0.88));
 }
 function rr(x, X, Y, w, h, r) { x.beginPath(); x.moveTo(X + r, Y); x.arcTo(X + w, Y, X + w, Y + h, r); x.arcTo(X + w, Y + h, X, Y + h, r); x.arcTo(X, Y + h, X, Y, r); x.arcTo(X, Y, X + w, Y, r); x.closePath(); }
