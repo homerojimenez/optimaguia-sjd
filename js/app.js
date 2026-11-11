@@ -225,7 +225,7 @@ function preload() {
 }
 async function intro() {
   if (state.reduce) { await preload(); gsap.set('#splash', { autoAlpha: 0 }); return; }
-  gsap.set(['.og-lock', '.sp-line', '.sp-for', '.sjd-lock'], { autoAlpha: 0 });
+  gsap.set(['#splash .og-lock', '#splash .sp-line', '#splash .sp-for', '#splash .sjd-lock'], { autoAlpha: 0 }); // solo la carga: el resumen usa el mismo logotipo
   const tl = gsap.timeline();
   // OPTIMA sube, la barra cae sobre la O y GUIA entra detrás
   tl.set('#splash .og-lock', { autoAlpha: 1 }, 0)
